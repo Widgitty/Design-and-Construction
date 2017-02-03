@@ -15,6 +15,9 @@
 
 #include "STM32F4xx.h"
 #include "LCD.h"
+#include "cmsis_os.h" 
+#define Delay osDelay
+
 
 const unsigned long lcd_mask[] = {1UL << 0, 1UL << 1, 1UL << 2, 1UL << 3, 1UL << 4, 1UL << 5, 1UL << 6, 1UL << 7};
 const unsigned long lcd_RS    = 1UL << 0;
@@ -130,13 +133,13 @@ void LCD_Initpins (void) {
  *----------------------------------------------------------------------------*/
 void LCD_Init (void) {
 	
-	Delay(20);
+	Delay(5);
 	
 	LCD_Eoff();
 	LCD_RSoff();
 	LCD_RWoff();
 	
-	Delay(20);
+	Delay(5);
 	
 	LCD_DataWrite( 0x20 );
 	LCD_Clk();
@@ -145,7 +148,7 @@ void LCD_Init (void) {
 	Delay(1);
 	LCD_Clk();
 	
-	Delay(20);
+	Delay(5);
 	
 	// Function Set: 4 bit mode, 1/16 duty, 5x8 font, 2 lines
 	LCD_Write(0x28);
@@ -157,8 +160,8 @@ void LCD_Init (void) {
 	LCD_Write(0x06);
 	
 	// Clear Display
-	 LCD_Clear();
-  Delay(100);
+	LCD_Clear();
+  Delay(25);
 }
 
 
@@ -299,7 +302,7 @@ void LCD_cursor_on (void) {
 	
 	LCD_RSoff();
 	LCD_Write(0x03);
-	Delay(10);
+	Delay(2);
 }
 
 /*----------------------------------------------------------------------------
@@ -309,7 +312,7 @@ void LCD_Clear (void) {
 
   LCD_RSoff();
 	LCD_Write(0x01);
-	Delay(10);
+	Delay(2);
 }
 
 
