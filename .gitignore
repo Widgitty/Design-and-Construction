@@ -1,0 +1,15 @@
+# ignore environment files
+# note .uvoptx is important
+
+*.uvguix
+*.uvguix.*
+
+# ignore build output
+Flash/
+Objects/
+
+# ignore debug
+DebugConfig/
+
+#ignore listings
+Listings/
