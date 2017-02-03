@@ -3,6 +3,7 @@
 
 *.uvguix
 *.uvguix.*
+*.TMP
 
 # ignore build output
 Flash/
