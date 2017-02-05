@@ -22,6 +22,8 @@
 #include "SWT.h"
 #include "LCD.h"
 #include "RTE_Components.h"
+
+// replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
 
 
@@ -114,10 +116,7 @@ int main (void) {
 		{
 			leds = leds ^ btns; 
 			GPIOD->ODR = leds;
-			Delay(25);
-			
-			
-			
+			Delay(100);
 			
 			LCD_Clear();
 			LCD_GotoXY(0,0);
