@@ -15,6 +15,7 @@
 
 #include "STM32F4xx.h"
 #include "LCD.h"
+#include "cmsis_os.h" 
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
