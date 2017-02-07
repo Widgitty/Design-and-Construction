@@ -1,0 +1,2 @@
+//#define OS_STKSIZE 500
+//#define OS_MAINSTKSIZE 500
