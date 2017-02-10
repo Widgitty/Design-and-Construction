@@ -1,15 +1,18 @@
 
 #include <stdio.h>
 #include "STM32F4xx_hal.h"
-#include "cmsis_os.h" 
+#include "cmsis_os.h"
+#include "RTE_Components.h"
+#include "System_Init.h"
+#include "System_Thread.h"
+#include "math.h"
 #include "LED.h"
 #include "SWT.h"
 #include "LCD.h"
-#include "RTE_Components.h"
 #include "ADC.h"
-#include "math.h"
-#include "System_Init.h"
-#include "System_Thread.h"
+#include "GPIO.h"
+
+
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -27,8 +30,9 @@ int main (void) {
   SystemClock_Config();
 
   LED_Init();  
-  SWT_Init();	
+  SWT_Init();
 	ADC1_Init();
+	GPIO_Init();
 	
 	
   LCD_Initpins();	

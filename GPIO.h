@@ -13,15 +13,15 @@
  * Copyright (c) 2011 Keil - An ARM Company. All rights reserved.
  *----------------------------------------------------------------------------*/
 
-#ifndef __LED_H
-#define __LED_H
+#ifndef __GPIO_H
+#define __GPIO_H
 
 /* LED Definitions */
-#define LED_NUM     8                        /* Number of user LEDs          */
+#define GPIO_NUM     5                        /* Number of user LEDs          */
 
-extern void LED_Init(void);
-extern void LED_On  (unsigned int num);
-extern void LED_Off (unsigned int num);
-extern void LED_Out (unsigned int value);
+extern void GPIO_Init(void);
+extern void GPIO_On  (unsigned int num);
+extern void GPIO_Off (unsigned int num);
+extern void GPIO_Out (unsigned int value);
 
 #endif

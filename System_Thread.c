@@ -11,6 +11,7 @@
 #include "math.h"
 #include "System_Init.h"
 #include "System_Thread.h"
+#include "GPIO.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -39,9 +40,20 @@ void Thread_System (void const *argument) {
 	char string[17];
 	char ohms[2] = {(char)0xDE, '\0'};
 	
-	GPIOD->ODR = 0;	
+	// Ranging perameters
+	int range = 0;
+	float OuterUpperLimit = 2.5;
+	float OuterLowerLimit = 0.5;
+	float InnerUpperLimit = 1.6;
+	float InnerLowerLimit = 1.4;
+	int maxRange = 1;
+	int minRange = 0;
+	
+	GPIOD->ODR = 0;
 
 	while (1) {
+		
+		// Read ADC
 		value = read_ADC1();
 		value = (value *16);
 		GPIOD->ODR = value;
@@ -49,7 +61,44 @@ void Thread_System (void const *argument) {
 		value_calk = ((double)value / (pow(2.0, 16.0))) * 3.3;
 		//value_calk = (double)0.5;
 		
-		LCD_Clear();
+		// Convert to value
+		// insert fomula here
+		
+		// Switch range based on limits
+		if ((value_calk > InnerLowerLimit) & (value_calk < InnerUpperLimit)){
+			if (range < maxRange) {
+				range++;
+			}
+			else {
+				// Print error to LCD
+			}
+		}
+		else if ((value_calk > OuterUpperLimit) | (value_calk < OuterLowerLimit)) {
+			if (range > minRange) {
+				range--;
+			}
+			else {
+				// Print error to LCD
+			}
+		}
+		
+		
+		// Set output based on range
+		switch (range) {
+			case 0:
+				GPIO_Off(0);
+			break;
+			case 1:
+				GPIO_On(0);
+			break;
+			default:
+				GPIO_Off(0); // Disconnect all inputs if possible
+			break;
+		}
+
+		
+		// Put to LCD
+		//LCD_Clear();
 		LCD_GotoXY(0,0);
 		sprintf(string, "                ");
 		sprintf(string, "%1.9lf", value_calk);
@@ -57,5 +106,6 @@ void Thread_System (void const *argument) {
 		LCD_GotoXY(15,0);
 		LCD_PutS(ohms);
 		Delay(100);
+		
 	}
 }
