@@ -37,9 +37,10 @@ void Thread_System (void const *argument) {
 	uint32_t value = 0;
 	double value_calk = 0;
 	char string[17];
+	char ohms[2] = {(char)0xDE, '\0'};
 	
 	GPIOD->ODR = 0;	
-	
+
 	while (1) {
 		value = read_ADC1();
 		value = (value *16);
@@ -54,7 +55,7 @@ void Thread_System (void const *argument) {
 		sprintf(string, "%1.9lf", value_calk);
 		LCD_PutS(string);
 		LCD_GotoXY(15,0);
-		LCD_PutS("V");
+		LCD_PutS(ohms);
 		Delay(100);
 	}
 }
