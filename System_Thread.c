@@ -38,10 +38,11 @@ void Thread_System (void const *argument) {
 	uint32_t value = 0;
 	double value_calk = 0;
 	char string[17];
-	char ohms[2] = {(char)0xDE, '\0'};
+	char unit[2] = {'A', '\0'};
 	
 	// Ranging perameters
-	int range = 0;
+	int range = 0; // lower = larger range / lower resolution (for Amps)
+	int mode = 0; // C, V, R
 	float OuterUpperLimit = 2.5;
 	float OuterLowerLimit = 0.5;
 	float InnerUpperLimit = 1.6;
@@ -53,6 +54,29 @@ void Thread_System (void const *argument) {
 
 	while (1) {
 		
+		uint32_t btns = 0;
+		
+		// Read mode
+		btns = SWT_Debounce();
+		
+		switch (btns) {
+			case 0x0100:
+				unit[0] = 'A';
+				mode = 0;
+			break;
+			case 0x0200:
+				unit[0] = 'V';
+				mode = 1;
+			break;
+			case 0x0400:
+				unit[0] = (char)0xDE;
+				mode = 2;
+			break;
+			default:
+				// Do nothing
+			break;
+		}
+		
 		// Read ADC
 		value = read_ADC1();
 		value = (value *16);
@@ -62,7 +86,7 @@ void Thread_System (void const *argument) {
 		//value_calk = (double)0.5;
 		
 		// Convert to value
-		// insert fomula here
+		// TODO: insert fomula here (depends on range and mode)
 		
 		// Switch range based on limits
 		if ((value_calk > InnerLowerLimit) & (value_calk < InnerUpperLimit)){
@@ -70,7 +94,7 @@ void Thread_System (void const *argument) {
 				range++;
 			}
 			else {
-				// Print error to LCD
+				// TODO: Print error to LCD
 			}
 		}
 		else if ((value_calk > OuterUpperLimit) | (value_calk < OuterLowerLimit)) {
@@ -78,7 +102,7 @@ void Thread_System (void const *argument) {
 				range--;
 			}
 			else {
-				// Print error to LCD
+				// TODO: Print error to LCD
 			}
 		}
 		
@@ -104,7 +128,7 @@ void Thread_System (void const *argument) {
 		sprintf(string, "%1.9lf", value_calk);
 		LCD_PutS(string);
 		LCD_GotoXY(15,0);
-		LCD_PutS(ohms);
+		LCD_PutS(unit);
 		Delay(100);
 		
 	}
