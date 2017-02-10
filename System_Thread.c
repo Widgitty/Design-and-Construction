@@ -15,10 +15,6 @@
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
-
-/*----------------------------------------------------------------------------
- *      Thread 1 'Thread_LED': LED thread
- *---------------------------------------------------------------------------*/
  
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
@@ -35,13 +31,25 @@ int Init_Thread_System (void) {
 
 void Thread_System (void const *argument) {
 	
+//	osPoolDef(mpool, 16, char[17]);
+//	osPoolId mpool;
+	osMessageQDef(MsgBox, 16, char[17]);
+	osMessageQId  MsgBox;
+	
+	char string[17] = {'A', 'B', 'C', '\0'};
+	
+	osMessagePut(MsgBox, (uint32_t)string, 1);
+	Delay(1000);
+	
+	/*
 	uint32_t value = 0;
 	double value_calk = 0;
 	char string[17];
-	char ohms[2] = {(char)0xDE, '\0'};
+	char unit[2] = {'A', '\0'};
 	
 	// Ranging perameters
-	int range = 0;
+	int range = 0; // lower = larger range / lower resolution (for Amps)
+	int mode = 0; // C, V, R
 	float OuterUpperLimit = 2.5;
 	float OuterLowerLimit = 0.5;
 	float InnerUpperLimit = 1.6;
@@ -52,6 +60,28 @@ void Thread_System (void const *argument) {
 	GPIOD->ODR = 0;
 
 	while (1) {
+		uint32_t btns = 0;
+		
+		// Read mode
+		btns = SWT_Debounce();
+		
+		switch (btns) {
+			case 0x0100:
+				unit[0] = 'A';
+				mode = 0;
+			break;
+			case 0x0200:
+				unit[0] = 'V';
+				mode = 1;
+			break;
+			case 0x0400:
+				unit[0] = (char)0xDE;
+				mode = 2;
+			break;
+			default:
+				//blah
+			break;
+		}
 		
 		// Read ADC
 		value = read_ADC1();
@@ -95,7 +125,6 @@ void Thread_System (void const *argument) {
 				GPIO_Off(0); // Disconnect all inputs if possible
 			break;
 		}
-
 		
 		// Put to LCD
 		//LCD_Clear();
@@ -104,8 +133,12 @@ void Thread_System (void const *argument) {
 		sprintf(string, "%1.9lf", value_calk);
 		LCD_PutS(string);
 		LCD_GotoXY(15,0);
-		LCD_PutS(ohms);
+		LCD_PutS(unit);
+		LCD_GotoXY(0,1);
+		sprintf(string, "%d", mode);
+		LCD_PutS(string);
 		Delay(100);
 		
 	}
+	*/
 }

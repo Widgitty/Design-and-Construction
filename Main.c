@@ -11,6 +11,7 @@
 #include "LCD.h"
 #include "ADC.h"
 #include "GPIO.h"
+#include "LCD_Thread.h"
 
 
 
@@ -43,5 +44,6 @@ int main (void) {
 	LCD_On(1);
 	
 	Init_Thread_System();
+	Init_Thread_LCD();
 
 }

@@ -10,6 +10,7 @@
 #include "math.h"
 #include "System_Init.h"
 #include "System_Thread.h"
+#include "LCD_Thread.h"
 
 #define Delay osDelay
 
@@ -28,6 +29,18 @@ int Init_Thread_LCD (void) {
 }
 
 void Thread_LCD (void const *argument) {
-	
-	
+	LCD_GotoXY(0,0);
+  LCD_PutS("BLAH");
+	osEvent evt;
+	osMessageQDef(MsgBox, 16, char[17]);
+	osMessageQId  MsgBox;
+	char *string;
+	while(1){
+		evt = osMessageGet(MsgBox, osWaitForever);  // wait for message
+    if (evt.status == osEventMessage) {
+      string = evt.value.p;
+			LCD_GotoXY(0,0);
+      LCD_PutS("Bloop");
+    }
+	}
 }
