@@ -12,6 +12,7 @@
 #include "System_Init.h"
 #include "System_Thread.h"
 #include "GPIO.h"
+#include "LCD_Thread.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -29,17 +30,19 @@ int Init_Thread_System (void) {
   return(0);
 }
 
+
 void Thread_System (void const *argument) {
 	
 //	osPoolDef(mpool, 16, char[17]);
 //	osPoolId mpool;
-	osMessageQDef(MsgBox, 16, char[17]);
-	osMessageQId  MsgBox;
 	
 	char string[17] = {'A', 'B', 'C', '\0'};
+	char *stringp = string;
 	
-	osMessagePut(MsgBox, (uint32_t)string, 1);
-	Delay(1000);
+	while (1) {
+		osMessagePut(MsgBox, (uint32_t)stringp, osWaitForever);
+		Delay(1000);
+	}
 	
 	/*
 	uint32_t value = 0;
