@@ -33,18 +33,8 @@ int Init_Thread_System (void) {
 
 void Thread_System (void const *argument) {
 	
-//	osPoolDef(mpool, 16, char[17]);
-//	osPoolId mpool;
-	
-	char string[17] = {'A', 'B', 'C', '\0'};
-	char *stringp = string;
-	
-	while (1) {
-		osMessagePut(MsgBox, (uint32_t)stringp, osWaitForever);
-		Delay(1000);
-	}
-	
-	/*
+	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
+		
 	uint32_t value = 0;
 	double value_calk = 0;
 	char string[17];
@@ -130,6 +120,7 @@ void Thread_System (void const *argument) {
 		}
 		
 		// Put to LCD
+		/*
 		//LCD_Clear();
 		LCD_GotoXY(0,0);
 		sprintf(string, "                ");
@@ -141,7 +132,16 @@ void Thread_System (void const *argument) {
 		sprintf(string, "%d", mode);
 		LCD_PutS(string);
 		Delay(100);
+		*/
 		
+		
+		sprintf(string, "%1.9lf", value_calk);
+		LCD_Write_At(string, 0, 0, 0);
+		LCD_Write_At(unit, 15, 0, 0);
+		if (range == 1) {
+			LCD_Write_At("m", 14, 0, 0);
+		} else {
+			LCD_Write_At(" ", 14, 0, 0);
+		}
 	}
-	*/
 }
