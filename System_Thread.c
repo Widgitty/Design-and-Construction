@@ -12,13 +12,10 @@
 #include "System_Init.h"
 #include "System_Thread.h"
 #include "GPIO.h"
+#include "LCD_Thread.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
-
-/*----------------------------------------------------------------------------
- *      Thread 1 'Thread_LED': LED thread
- *---------------------------------------------------------------------------*/
  
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
@@ -33,8 +30,11 @@ int Init_Thread_System (void) {
   return(0);
 }
 
+
 void Thread_System (void const *argument) {
 	
+	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
+		
 	uint32_t value = 0;
 	double value_calk = 0;
 	char string[17];
@@ -53,6 +53,28 @@ void Thread_System (void const *argument) {
 	GPIOD->ODR = 0;
 
 	while (1) {
+		uint32_t btns = 0;
+		
+		// Read mode
+		btns = SWT_Debounce();
+		
+		switch (btns) {
+			case 0x0100:
+				unit[0] = 'A';
+				mode = 0;
+			break;
+			case 0x0200:
+				unit[0] = 'V';
+				mode = 1;
+			break;
+			case 0x0400:
+				unit[0] = (char)0xDE;
+				mode = 2;
+			break;
+			default:
+				//blah
+			break;
+		}
 		
 		uint32_t btns = 0;
 		
@@ -119,9 +141,9 @@ void Thread_System (void const *argument) {
 				GPIO_Off(0); // Disconnect all inputs if possible
 			break;
 		}
-
 		
 		// Put to LCD
+		/*
 		//LCD_Clear();
 		LCD_GotoXY(0,0);
 		sprintf(string, "                ");
@@ -130,6 +152,16 @@ void Thread_System (void const *argument) {
 		LCD_GotoXY(15,0);
 		LCD_PutS(unit);
 		Delay(100);
+		*/
 		
+		
+		sprintf(string, "%1.9lf", value_calk);
+		LCD_Write_At(string, 0, 0, 0);
+		LCD_Write_At(unit, 15, 0, 0);
+		if (range == 1) {
+			LCD_Write_At("m", 14, 0, 0);
+		} else {
+			LCD_Write_At(" ", 14, 0, 0);
+		}
 	}
 }
