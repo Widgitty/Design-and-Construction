@@ -76,29 +76,6 @@ void Thread_System (void const *argument) {
 			break;
 		}
 		
-		uint32_t btns = 0;
-		
-		// Read mode
-		btns = SWT_Debounce();
-		
-		switch (btns) {
-			case 0x0100:
-				unit[0] = 'A';
-				mode = 0;
-			break;
-			case 0x0200:
-				unit[0] = 'V';
-				mode = 1;
-			break;
-			case 0x0400:
-				unit[0] = (char)0xDE;
-				mode = 2;
-			break;
-			default:
-				// Do nothing
-			break;
-		}
-		
 		// Read ADC
 		value = read_ADC1();
 		value = (value *16);
