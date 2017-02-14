@@ -13,6 +13,7 @@
 #include "System_Thread.h"
 #include "GPIO.h"
 #include "LCD_Thread.h"
+#include "stm32f4xx_hal_tim.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -30,14 +31,47 @@ int Init_Thread_System (void) {
   return(0);
 }
 
+static TIM_HandleTypeDef timer_Instance = { .Instance = TIM3};
+
+void Init_Timer(void) {
+	__TIM3_CLK_ENABLE();
+	timer_Instance.Init.Prescaler = 1000000;
+	timer_Instance.Init.CounterMode = TIM_COUNTERMODE_UP;
+	timer_Instance.Init.Period = 1000;
+	timer_Instance.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	timer_Instance.Init.RepetitionCounter = 0;
+	HAL_TIM_Base_Init(&timer_Instance);
+	HAL_TIM_Base_Start(&timer_Instance);
+}
+
+
 
 void Thread_System (void const *argument) {
 	
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
+	
+	Init_Timer();
+	char string[17];
+	while(1) {
+			int timerValue = __HAL_TIM_GET_COUNTER(&timer_Instance);
 		
+			sprintf(string, "%d", timerValue);
+			LCD_Write_At(string, 0, 0, 0);
+	}
+	
+	
+	
+	
+	
+	
+	
+	/*
+	TIM3->PSC = 599;
+	TIM3->ARR = 60000;
+	TIM3->CR1 = TIM_CR1_CEN;
+	*/
 	uint32_t value = 0;
 	double value_calk = 0;
-	char string[17];
 	char unit[2] = {'A', '\0'};
 	
 	// Ranging perameters
@@ -50,7 +84,7 @@ void Thread_System (void const *argument) {
 	int maxRange = 1;
 	int minRange = 0;
 	
-	GPIOD->ODR = 0;
+	//GPIOD->ODR = 0;
 
 	while (1) {
 		uint32_t btns = 0;

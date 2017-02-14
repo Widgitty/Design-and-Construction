@@ -15,6 +15,7 @@ void LCD_Write_At(char *string, int x, int y, int reset) {
 	osMessagePut(MsgBox, (uint32_t)command, osWaitForever);
 }
 
+
 void Thread_LCD (void const *argument);                 // thread function
 osThreadId tid_Thread_LCD;                              // thread id
 // Thread priority set to high, as system thread should not be blockable
