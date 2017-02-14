@@ -1,5 +1,6 @@
 #ifndef __LCD_Thread_H
 #define __LCD_Thread_H
+#include "cmsis_os.h"
 
 typedef struct {
     char string[17];
