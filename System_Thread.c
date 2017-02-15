@@ -13,6 +13,7 @@
 #include "System_Thread.h"
 #include "GPIO.h"
 #include "LCD_Thread.h"
+#include "Serial.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -34,6 +35,8 @@ int Init_Thread_System (void) {
 void Thread_System (void const *argument) {
 	
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
+	
+	Serial();
 		
 	uint32_t value = 0;
 	double value_calk = 0;

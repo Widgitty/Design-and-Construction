@@ -2,6 +2,7 @@
 #define __Serial_H
 #include <stdint.h>
 
-//extern void SWT_Init(void);
+extern void Error(int);
+extern void Serial(void);
 
 #endif
