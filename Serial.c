@@ -10,6 +10,8 @@
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
 
+UART_HandleTypeDef UART_Handle;
+
 void Error(int err) {
 	int i;
 	char string[17];
@@ -24,6 +26,13 @@ void Error(int err) {
 }
 
 
+void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
+	HAL_StatusTypeDef Ret = HAL_UART_Transmit(&UART_Handle, pData, Size, Timeout);
+		if (Ret != HAL_OK)
+			Error(Ret);
+}
+
+
 // Callback from HAL
 void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 	
@@ -31,41 +40,21 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 	sprintf(string, "HAL_StausTypeDef");
 	LCD_Write_At(string, 0, 0, 1);
 	Delay(1000);
-	
+
+	// Enable clocks
 	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__USART2_CLK_ENABLE();
 	
-	//RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
-	
-	/*
+	// Initialise GPIOs
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitStructure.Pin = GPIO_PIN_2 | GPIO_PIN_3;
-	//GPIO_InitStructure.Mode = GPIO_MODE;
+	GPIO_InitStructure.Mode = GPIO_MODE_AF_PP;
 	GPIO_InitStructure.Pull = GPIO_PULLUP;
-	GPIO_InitStructure.Speed = GPIO_SPEED_FAST;
-	GPIO_InitStructure.Alternate = 3;
-	HAL_GPIO_Init(GPIOA,&GPIO_InitStructure);
-	*/
+	GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
+	GPIO_InitStructure.Alternate = GPIO_AF7_USART2;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
 	
-	// Enable UART2 interface clock
-	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
-  RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
-	
-	// enable clock for UART GPIO pins
-	
-	// Configgure pins as alternate function pull-up
-	GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD2;
-	GPIOA->PUPDR |=  GPIO_PUPDR_PUPD2_0; //Set Pullup for pin 2
-	GPIOA->MODER &= ~GPIO_MODER_MODER2;
-  GPIOA->MODER |=  GPIO_MODER_MODER2_1; //Setup TX pin for Alternate Function
-  GPIOA->AFR[0] |= (7 << (4*2)); //Setup TX pin for Alternate Function
-	
-	GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD3;
-	GPIOA->PUPDR |=  GPIO_PUPDR_PUPD3_0; //Set Pullup for pin 3
-	GPIOA->MODER &= ~GPIO_MODER_MODER3;
-  GPIOA->MODER |=  GPIO_MODER_MODER3_1; //Setup RX pin for Alternate Function
-  GPIOA->AFR[0] |= (7 << (4*3)); //Setup RX as the Alternate Function
-
 	
 	// Other config if required
 
@@ -98,6 +87,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 void Serial()
 {
 	HAL_StatusTypeDef Ret;
+	
+	// Debug ----------------------------------
 	char string[17];
 	
 	sprintf(string, "Start");
@@ -112,64 +103,29 @@ void Serial()
 	sprintf(string, "SYS_CLK: %d", clk);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(5000);
+	// ----------------------------------------
 	
-	//(#) Declare a UART_HandleTypeDef handle structure.
-	UART_HandleTypeDef UART_Handle;
 	
-	// Just for reference, don't call this
-	//HAL_UART_MspInit(&UART_Handle);
 
-
-
-
-/*
-    (#) Program the Baud Rate, Word Length, Stop Bit, Parity, Hardware 
-        flow control and Mode(Receiver/Transmitter) in the Init structure.
-*/
-
+	// UART handle and configguration
+	//UART_HandleTypeDef UART_Handle; // Made global for now
 	UART_Handle.Instance = USART2;
-	
-  UART_Handle.Init.BaudRate = 115200;                  /*!< This member configures the UART communication baud rate.
-                                           The baud rate is computed using the following formula:
-                                           - IntegerDivider = ((PCLKx) / (8 * (OVR8+1) * (huart->Init.BaudRate)))
-                                           - FractionalDivider = ((IntegerDivider - ((uint32_t) IntegerDivider)) * 8 * (OVR8+1)) + 0.5 
-                                           Where OVR8 is the "oversampling by 8 mode" configuration bit in the CR1 register. */
+  UART_Handle.Init.BaudRate = 115200;
+  UART_Handle.Init.WordLength = UART_WORDLENGTH_8B;
+  UART_Handle.Init.StopBits = UART_STOPBITS_1;
+  UART_Handle.Init.Parity = UART_PARITY_NONE;
+  UART_Handle.Init.Mode = UART_MODE_TX_RX;
+  UART_Handle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  UART_Handle.Init.OverSampling = UART_OVERSAMPLING_8;
 
-  UART_Handle.Init.WordLength = UART_WORDLENGTH_8B;                /*!< Specifies the number of data bits transmitted or received in a frame.
-                                           This parameter can be a value of @ref UART_Word_Length */
 
-  UART_Handle.Init.StopBits = UART_STOPBITS_1;                  /*!< Specifies the number of stop bits transmitted.
-                                           This parameter can be a value of @ref UART_Stop_Bits */
-
-  UART_Handle.Init.Parity = UART_PARITY_NONE;                    /*!< Specifies the parity mode.
-                                           This parameter can be a value of @ref UART_Parity
-                                           @note When parity is enabled, the computed parity is inserted
-                                                 at the MSB position of the transmitted data (9th bit when
-                                                 the word length is set to 9 data bits; 8th bit when the
-                                                 word length is set to 8 data bits). */
- 
-  UART_Handle.Init.Mode = UART_MODE_TX_RX;                      /*!< Specifies whether the Receive or Transmit mode is enabled or disabled.
-                                           This parameter can be a value of @ref UART_Mode */
-
-  UART_Handle.Init.HwFlowCtl = UART_HWCONTROL_NONE;                 /*!< Specifies whether the hardware flow control mode is enabled
-                                           or disabled.
-                                           This parameter can be a value of @ref UART_Hardware_Flow_Control */
-  
-  UART_Handle.Init.OverSampling = UART_OVERSAMPLING_8;              /*!< Specifies whether the Over sampling 8 is enabled or disabled, to achieve higher speed (up to fPCLK/8).
-                                           This parameter can be a value of @ref UART_Over_Sampling */ 
-
-/*
-    (#) For the UART asynchronous mode, initialize the UART registers by calling
-        the HAL_UART_Init() API.
-*/
 	Ret = HAL_UART_Init(&UART_Handle);
 	if (Ret != HAL_OK)
 		Error(Ret);
 	
-	sprintf(string, "Setup complete");
-	LCD_Write_At(string, 0, 0, 1);
 
-
+	/*
+	// Testing -------------------------------------------------
 	char Data[17];
 	int Size = 13;
 	
@@ -183,6 +139,7 @@ void Serial()
 		sprintf(string, "Printing");
 		LCD_Write_At(string, 0, 0, 1);
 	}
+	*/
 
 
 

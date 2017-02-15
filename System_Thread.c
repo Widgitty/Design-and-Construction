@@ -14,6 +14,7 @@
 #include "GPIO.h"
 #include "LCD_Thread.h"
 #include "Serial.h"
+#include "String.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -54,6 +55,7 @@ void Thread_System (void const *argument) {
 	int minRange = 0;
 	
 	GPIOD->ODR = 0;
+	LCD_Write_At(NULL, 0, 0, 1);
 
 	while (1) {
 		uint32_t btns = 0;
@@ -134,14 +136,18 @@ void Thread_System (void const *argument) {
 		Delay(100);
 		*/
 		
-		
+
 		sprintf(string, "%1.9lf", value_calk);
 		LCD_Write_At(string, 0, 0, 0);
 		LCD_Write_At(unit, 15, 0, 0);
+		
 		if (range == 1) {
 			LCD_Write_At("m", 14, 0, 0);
+			sprintf(string, "%s m%s\r\n", string, unit);
 		} else {
 			LCD_Write_At(" ", 14, 0, 0);
+			sprintf(string, "%s %s\r\n", string, unit);
 		}
+		SerialSend((uint8_t*)string, strlen(string), 1000);
 	}
 }
