@@ -10,8 +10,24 @@
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
 
-UART_HandleTypeDef UART_Handle;
+//=================================================//
+//============ Global defines =======================//
+//=================================================//
 
+UART_HandleTypeDef UART_Handle;
+DMA_HandleTypeDef hdma_usart1_rx;
+uint8_t rxBuffer = '\000';
+uint8_t rxString[100]; // where we build our string from characters coming in
+int rxindex = 0; // index for going though rxString
+
+osMessageQId SerialMsgBox;
+osPoolId  SerialMpool;
+
+
+
+//=================================================//
+//============ My functions =======================//
+//=================================================//
 void Error(int err) {
 	int i;
 	char string[17];
@@ -27,15 +43,178 @@ void Error(int err) {
 
 
 void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
-	HAL_StatusTypeDef Ret = HAL_UART_Transmit(&UART_Handle, pData, Size, Timeout);
-		if (Ret != HAL_OK)
-			Error(Ret);
+	HAL_StatusTypeDef Ret = HAL_UART_Transmit(&UART_Handle, pData, Size, 1000);
+	if (Ret != HAL_OK)
+		Error(Ret);
+	
+	Delay(1000);
+		
 }
+
+void SerialReceive() {
+	char string[17];
+	char Receive[5];
+	uint8_t *pReceive = (uint8_t*)&Receive;
+	HAL_StatusTypeDef Ret;
+	
+	Ret = HAL_UART_Receive(&UART_Handle, pReceive, 5, 1000);
+	if (Ret == HAL_OK) {
+		sprintf(string, "Serial received");
+		LCD_Write_At(string, 0, 0, 1);
+		sprintf(string, "%s", Receive);
+		LCD_Write_At(string, 0, 1, 0);
+		Delay(5000);
+		LCD_Write_At("", 0, 0, 1);
+	}
+	else {
+		sprintf(string, "Serial timeout");
+		LCD_Write_At(string, 0, 0, 1);
+		sprintf(string, "Error: %d", Ret);
+		LCD_Write_At(string, 0, 1, 0);
+		Delay(5000);
+		LCD_Write_At("", 0, 0, 1);
+	}
+}
+
+
+
+//=================================================//
+//============ Callbacks =======================//
+//=================================================//
+
+
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+	char string[17];
+	sprintf(string, "Send Success");
+	LCD_Write_At(string, 0, 0, 1);
+	Delay(5000);
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+	char string[17];
+	sprintf(string, "Send Fail");
+	LCD_Write_At(string, 0, 0, 1);
+	Delay(5000);	
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	Error(6);
+    __HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
+		
+		Serial_rx_t *rx = (Serial_rx_t*)osPoolAlloc(SerialMpool);
+		sprintf(rx->string, "%s","Hello");
+		osMessagePut(SerialMsgBox, (uint32_t)rx, osWaitForever);
+	
+    int i = 0;
+
+    if (rxBuffer == '\n' || rxBuffer == '\r') // If Enter
+    {
+			/*
+			Serial_rx_t *rx = (Serial_rx_t*)osPoolAlloc(SerialMpool);
+			sprintf(rx->string, "%s",rxString);
+			osMessagePut(SerialMsgBox, (uint32_t)rx, osWaitForever);
+*/
+			rxString[rxindex] = 0;
+			rxindex = 0;
+			for (i = 0; i < 100; i++) rxString[i] = 0; // Clear the string buffer
+    }
+
+    else
+    {
+        rxString[rxindex] = rxBuffer; // Add that character to the string
+        rxindex++;
+        if (rxindex > 100) // User typing too much, we can't have commands that big
+        {
+            rxindex = 0;
+            for (i = 0; i < 100; i++) rxString[i] = 0; // Clear the string buffer
+        }
+    }
+		
+}
+
+
+
+/*
+void DMA2_Stream2_IRQHandler(void)
+{
+	Error(5);
+	Serial_rx_t *rx = (Serial_rx_t*)osPoolAlloc(SerialMpool);
+	sprintf(rx->string, "%s","DMA Handled");
+	osMessagePut(SerialMsgBox, (uint32_t)rx, osWaitForever);
+	
+	NVIC_ClearPendingIRQ(DMA2_Stream2_IRQn);
+	HAL_DMA_IRQHandler(&hdma_usart1_rx);
+}
+*/
+
+
+
+
+
+
+
+
+
+
+
+//=================================================//
+//============ Init Callbacks =======================//
+//=================================================//
+
+
+void SetupDMA(UART_HandleTypeDef *huart) {
+	__DMA2_CLK_ENABLE();
+
+	hdma_usart1_rx.Instance = DMA2_Stream2;
+	hdma_usart1_rx.Init.Channel = DMA_CHANNEL_4;
+	hdma_usart1_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+	hdma_usart1_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+	hdma_usart1_rx.Init.MemInc = DMA_MINC_ENABLE;
+	hdma_usart1_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+	hdma_usart1_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+	hdma_usart1_rx.Init.Mode = DMA_CIRCULAR;
+	hdma_usart1_rx.Init.Priority = DMA_PRIORITY_LOW;
+	hdma_usart1_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+	HAL_DMA_Init(&hdma_usart1_rx);
+
+	__HAL_LINKDMA(huart, hdmarx, hdma_usart1_rx);
+
+	uint32_t priorityGroup;
+	uint32_t priority;
+	
+	NVIC_SetPriorityGrouping(5);
+	priorityGroup =  NVIC_GetPriorityGrouping();  
+	priority = NVIC_EncodePriority(priorityGroup, 0, 6);
+	NVIC_SetPriority(DMA2_Stream2_IRQn, priority);
+	NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+	
+}
+
+void SetupCallbacks() {
+
+	uint32_t priorityGroup;
+	uint32_t priority;
+	
+	NVIC_SetPriorityGrouping(5);
+	priorityGroup =  NVIC_GetPriorityGrouping();  
+	priority = NVIC_EncodePriority(priorityGroup, 0, 6);
+	NVIC_SetPriority(USART2_IRQn, priority);
+	NVIC_EnableIRQ(USART2_IRQn);
+	
+	// Enable callbacks
+	//__NVIC_SetPriority(USART2_IRQn, 10);
+	//__NVIC_EnableIRQ(USART2_IRQn);
+}
+
+
 
 
 // Callback from HAL
 void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 	
+	// Debug
 	char string[17];
 	sprintf(string, "HAL_StausTypeDef");
 	LCD_Write_At(string, 0, 0, 1);
@@ -43,7 +222,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 
 	// Enable clocks
 	__HAL_RCC_GPIOA_CLK_ENABLE();
-	__USART2_CLK_ENABLE();
+	__USART2_CLK_ENABLE();	
 	
 	// Initialise GPIOs
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -54,6 +233,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 	GPIO_InitStructure.Alternate = GPIO_AF7_USART2;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
+	SetupCallbacks();
+	SetupDMA(huart);
 	
 	
 	// Other config if required
@@ -84,7 +265,20 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 	
 }
 
-void Serial()
+
+
+
+
+
+
+//=================================================//
+//============ Main Init Function =======================//
+//=================================================//
+
+
+
+
+void SerialInit()
 {
 	HAL_StatusTypeDef Ret;
 	
@@ -105,6 +299,11 @@ void Serial()
 	Delay(5000);
 	// ----------------------------------------
 	
+	osPoolDef(SerialMpool, 16, Serial_rx_t);
+	SerialMpool = osPoolCreate(osPool(SerialMpool));
+	osMessageQDef(SerialMsgBox, 16, Serial_rx_t);
+	SerialMsgBox = osMessageCreate(osMessageQ(SerialMsgBox), NULL);
+	
 	
 
 	// UART handle and configguration
@@ -116,13 +315,23 @@ void Serial()
   UART_Handle.Init.Parity = UART_PARITY_NONE;
   UART_Handle.Init.Mode = UART_MODE_TX_RX;
   UART_Handle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  UART_Handle.Init.OverSampling = UART_OVERSAMPLING_8;
+  UART_Handle.Init.OverSampling = UART_OVERSAMPLING_16;
 
 
 	Ret = HAL_UART_Init(&UART_Handle);
 	if (Ret != HAL_OK)
 		Error(Ret);
 	
+	// Test message queue back to system thread
+	Serial_rx_t *rx = (Serial_rx_t*)osPoolAlloc(SerialMpool);
+	sprintf(rx->string, "%s","Hello");
+	osMessagePut(SerialMsgBox, (uint32_t)rx, osWaitForever);
+
+	
+
+	// Start DMA recieve
+	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
+	HAL_UART_Receive_DMA(&UART_Handle, &rxBuffer, 1);
 
 	/*
 	// Testing -------------------------------------------------
