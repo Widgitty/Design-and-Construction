@@ -15,7 +15,8 @@
 //=================================================//
 
 UART_HandleTypeDef UART_Handle;
-DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef DMAR_Rx_Handle;
+DMA_HandleTypeDef DMAR_Tx_Handle;
 uint8_t rxBuffer = '\000';
 uint8_t rxString[100]; // where we build our string from characters coming in
 int rxindex = 0; // index for going though rxString
@@ -43,9 +44,12 @@ void Error(int err) {
 
 
 void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
-	HAL_StatusTypeDef Ret = HAL_UART_Transmit(&UART_Handle, pData, Size, 1000);
+	//UART_Handle.gState = HAL_UART_STATE_READY;
+	HAL_StatusTypeDef Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
 	if (Ret != HAL_OK)
 		Error(Ret);
+	else
+		Error(10);
 	
 	Delay(1000);
 		
@@ -86,6 +90,7 @@ void SerialReceive() {
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 	char string[17];
+	Error(7);
 	sprintf(string, "Send Success");
 	LCD_Write_At(string, 0, 0, 1);
 	Delay(5000);
@@ -93,6 +98,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 	char string[17];
+	Error(7);
 	sprintf(string, "Send Fail");
 	LCD_Write_At(string, 0, 0, 1);
 	Delay(5000);	
@@ -165,30 +171,57 @@ void DMA2_Stream2_IRQHandler(void)
 
 
 void SetupDMA(UART_HandleTypeDef *huart) {
-	__DMA2_CLK_ENABLE();
-
-	hdma_usart1_rx.Instance = DMA2_Stream2;
-	hdma_usart1_rx.Init.Channel = DMA_CHANNEL_4;
-	hdma_usart1_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
-	hdma_usart1_rx.Init.PeriphInc = DMA_PINC_DISABLE;
-	hdma_usart1_rx.Init.MemInc = DMA_MINC_ENABLE;
-	hdma_usart1_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-	hdma_usart1_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-	hdma_usart1_rx.Init.Mode = DMA_CIRCULAR;
-	hdma_usart1_rx.Init.Priority = DMA_PRIORITY_LOW;
-	hdma_usart1_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
-	HAL_DMA_Init(&hdma_usart1_rx);
-
-	__HAL_LINKDMA(huart, hdmarx, hdma_usart1_rx);
 
 	uint32_t priorityGroup;
 	uint32_t priority;
 	
+	__DMA2_CLK_ENABLE();
+	
+	// RX
+
+	DMAR_Rx_Handle.Instance = DMA2_Stream2;
+	DMAR_Rx_Handle.Init.Channel = DMA_CHANNEL_4;
+	DMAR_Rx_Handle.Init.Direction = DMA_PERIPH_TO_MEMORY;
+	DMAR_Rx_Handle.Init.PeriphInc = DMA_PINC_DISABLE;
+	DMAR_Rx_Handle.Init.MemInc = DMA_MINC_ENABLE;
+	DMAR_Rx_Handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+	DMAR_Rx_Handle.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+	DMAR_Rx_Handle.Init.Mode = DMA_CIRCULAR;
+	DMAR_Rx_Handle.Init.Priority = DMA_PRIORITY_LOW;
+	DMAR_Rx_Handle.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+	HAL_DMA_Init(&DMAR_Rx_Handle);
+
+	__HAL_LINKDMA(huart, hdmarx, DMAR_Rx_Handle);
+
 	NVIC_SetPriorityGrouping(5);
 	priorityGroup =  NVIC_GetPriorityGrouping();  
 	priority = NVIC_EncodePriority(priorityGroup, 0, 6);
 	NVIC_SetPriority(DMA2_Stream2_IRQn, priority);
 	NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+	
+	
+	
+	// TX
+
+	DMAR_Tx_Handle.Instance = DMA2_Stream1;
+	DMAR_Tx_Handle.Init.Channel = DMA_CHANNEL_4;
+	DMAR_Tx_Handle.Init.Direction = DMA_PERIPH_TO_MEMORY;
+	DMAR_Tx_Handle.Init.PeriphInc = DMA_PINC_DISABLE;
+	DMAR_Tx_Handle.Init.MemInc = DMA_MINC_ENABLE;
+	DMAR_Tx_Handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+	DMAR_Tx_Handle.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+	DMAR_Tx_Handle.Init.Mode = DMA_CIRCULAR;
+	DMAR_Tx_Handle.Init.Priority = DMA_PRIORITY_LOW;
+	DMAR_Tx_Handle.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+	HAL_DMA_Init(&DMAR_Tx_Handle);
+
+	__HAL_LINKDMA(huart, hdmatx, DMAR_Tx_Handle);
+
+	NVIC_SetPriorityGrouping(5);
+	priorityGroup =  NVIC_GetPriorityGrouping();  
+	priority = NVIC_EncodePriority(priorityGroup, 0, 6);
+	NVIC_SetPriority(DMA2_Stream1_IRQn, priority);
+	NVIC_EnableIRQ(DMA2_Stream1_IRQn);
 	
 }
 
