@@ -82,6 +82,23 @@ void Thread_System (void const *argument) {
 			break;
 		}
 		
+		switch (mode) {
+			case 0:
+				unit[0] = 'A';
+			break;
+			case 1:
+				unit[0] = 'V';
+			break;
+			case 2:
+				unit[0] = (char)0xDE;
+			break;
+			default:
+				sprintf(string, "Undefined mode!");
+				LCD_Write_At(string, 0, 0, 0);
+				Delay(1000);
+			break;
+		}
+		
 		// Read ADC
 		value = read_ADC1();
 		value = (value *16);
@@ -153,6 +170,8 @@ void Thread_System (void const *argument) {
 		SerialSend((uint8_t*)string, strlen(string), 1000);
 		
 		SerialReceive();
+		
+		SerialCheckMode(&mode);
 
 		
 	}
