@@ -38,6 +38,7 @@ void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 	
 	SerialInit();
+	SerialReceiveStart();
 		
 	uint32_t value = 0;
 	double value_calk = 0;
@@ -151,13 +152,7 @@ void Thread_System (void const *argument) {
 
 		SerialSend((uint8_t*)string, strlen(string), 1000);
 		
-		osEvent evt = osMessageGet(SerialMsgBox, 10);  // wait for message
-    if (evt.status == osEventMessage) {
-      Serial_rx_t *rx = (Serial_rx_t*)evt.value.p;
-			LCD_Write_At(rx->string, 0, 0, 1);
-			Delay(5000);
-    }
-		//SerialReceive();
+		SerialReceive();
 
 		
 	}
