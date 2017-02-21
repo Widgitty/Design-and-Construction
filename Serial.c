@@ -84,6 +84,40 @@ void SerialCheckMode(int *mode) {
 
 
 //=================================================//
+//============ Redefine HAL function for backwards compatibility =======================//
+//=================================================//
+
+HAL_StatusTypeDef Custom_HAL_UART_AbortTransmit(UART_HandleTypeDef *huart)
+{
+  /* Disable TXEIE and TCIE interrupts */
+  CLEAR_BIT(huart->Instance->CR1, (USART_CR1_TXEIE | USART_CR1_TCIE));
+
+  /* Disable the UART DMA Tx request if enabled */
+  if(HAL_IS_BIT_SET(huart->Instance->CR3, USART_CR3_DMAT))
+  {
+    CLEAR_BIT(huart->Instance->CR3, USART_CR3_DMAT);
+
+    /* Abort the UART DMA Tx channel : use blocking DMA Abort API (no callback) */
+    if(huart->hdmatx != NULL)
+    {
+      /* Set the UART DMA Abort callback to Null. 
+         No call back execution at end of DMA abort procedure */
+      huart->hdmatx->XferAbortCallback = NULL;
+
+      HAL_DMA_Abort(huart->hdmatx);
+    }
+  }
+
+  /* Reset Tx transfer counter */
+  huart->TxXferCount = 0x00U;
+
+  /* Restore huart->gState to Ready */
+  huart->gState = HAL_UART_STATE_READY;
+
+  return HAL_OK;
+}
+
+//=================================================//
 //============ Callbacks =======================//
 //=================================================//
 
@@ -92,7 +126,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 	doneFlag = 17;
 	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
 	//HAL_UART_DMAStop(huart);
-	HAL_UART_AbortTransmit(huart);
+	Custom_HAL_UART_AbortTransmit(huart);
 	
 }
 
