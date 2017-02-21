@@ -3,9 +3,11 @@
 #include "stm32f4xx_hal_dma.h"
 #include "stm32f4xx_hal_uart.h"
 #include "LED.h"
-#include "LCD_Thread.h"
 #include "stm32f4xx_hal_rcc.h"
 #include "stm32f4xx_hal_gpio.h"
+#include "LCD.h"
+#include "String.h"
+
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -15,70 +17,59 @@
 //=================================================//
 
 UART_HandleTypeDef UART_Handle;
-DMA_HandleTypeDef DMAR_Rx_Handle;
-DMA_HandleTypeDef DMAR_Tx_Handle;
+DMA_HandleTypeDef DMA_Rx_Handle;
+DMA_HandleTypeDef DMA_Tx_Handle;
 uint8_t rxBuffer = '\000';
 uint8_t rxString[100]; // where we build our string from characters coming in
 int rxindex = 0; // index for going though rxString
+char rx_Out[100];
 
-osMessageQId SerialMsgBox;
-osPoolId  SerialMpool;
+int doneFlag = 0;
 
-
-
-//=================================================//
-//============ My functions =======================//
-//=================================================//
-void Error(int err) {
-	int i;
-	char string[17];
-	sprintf(string, "ERROR: %d", err);
-	LCD_Write_At(string, 0, 0, 1);
-	for (i = 0; i<10; i++) {
-		LED_Out(0xFF);
-		Delay(100);
-		LED_Out(err);
-		Delay(100);
-	}
-}
 
 
 void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
 	//UART_Handle.gState = HAL_UART_STATE_READY;
+	//HAL_StatusTypeDef Ret = HAL_UART_Transmit(&UART_Handle, pData, Size, 1000);
+	//HAL_StatusTypeDef Ret = HAL_UART_Transmit_IT(&UART_Handle, pData, Size);
+	doneFlag = 0;
+	LED_Out(3);
 	HAL_StatusTypeDef Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
+	LED_Out(4);
+	while (doneFlag == 0) {
+		Delay(100);
+	}
+	LED_Out(doneFlag);
+	//HAL_StatusTypeDef Ret = 2;
+	//Delay(5000);
+	/*
 	if (Ret != HAL_OK)
 		Error(Ret);
-	else
-		Error(10);
-	
-	Delay(1000);
+	else {
+		char string[17];
+		sprintf(string, "Serial sent");
+		LCD_Write_At(string, 0, 0, 1);
+		Delay(1000);
+		LCD_Write_At("", 0, 0, 1);
+	}*/
 		
 }
 
-void SerialReceive() {
-	char string[17];
-	char Receive[5];
-	uint8_t *pReceive = (uint8_t*)&Receive;
-	HAL_StatusTypeDef Ret;
-	
-	Ret = HAL_UART_Receive(&UART_Handle, pReceive, 5, 1000);
-	if (Ret == HAL_OK) {
-		sprintf(string, "Serial received");
-		LCD_Write_At(string, 0, 0, 1);
-		sprintf(string, "%s", Receive);
-		LCD_Write_At(string, 0, 1, 0);
-		Delay(5000);
-		LCD_Write_At("", 0, 0, 1);
-	}
-	else {
-		sprintf(string, "Serial timeout");
-		LCD_Write_At(string, 0, 0, 1);
-		sprintf(string, "Error: %d", Ret);
-		LCD_Write_At(string, 0, 1, 0);
-		Delay(5000);
-		LCD_Write_At("", 0, 0, 1);
-	}
+
+void SerialReceiveStart() {
+	// Start DMA recieve
+	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
+	HAL_UART_Receive_DMA(&UART_Handle, &rxBuffer, 1);
 }
+
+void SerialReceive() {
+	LED_Out(1);
+	LCD_Clear();
+	LCD_GotoXY(0, 0);
+	LCD_PutS(rx_Out);
+	SerialSend((uint8_t*)rx_Out, strlen(rx_Out), 1000);
+}
+
 
 
 
@@ -87,31 +78,30 @@ void SerialReceive() {
 //=================================================//
 
 
-
+/*
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 	char string[17];
-	Error(7);
+	Info(8);
 	sprintf(string, "Send Success");
 	LCD_Write_At(string, 0, 0, 1);
 	Delay(5000);
 }
+*/
 
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-	char string[17];
-	Error(7);
-	sprintf(string, "Send Fail");
-	LCD_Write_At(string, 0, 0, 1);
-	Delay(5000);	
+
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+	doneFlag = 17;
+	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
+	//HAL_UART_DMAStop(huart);
+	HAL_UART_AbortTransmit(huart);
+	
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	Error(6);
+		LED_Out(9);
     __HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
-		
-		Serial_rx_t *rx = (Serial_rx_t*)osPoolAlloc(SerialMpool);
-		sprintf(rx->string, "%s","Hello");
-		osMessagePut(SerialMsgBox, (uint32_t)rx, osWaitForever);
 	
     int i = 0;
 
@@ -123,6 +113,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			osMessagePut(SerialMsgBox, (uint32_t)rx, osWaitForever);
 */
 			rxString[rxindex] = 0;
+			sprintf(rx_Out, "%s", rxString);
 			rxindex = 0;
 			for (i = 0; i < 100; i++) rxString[i] = 0; // Clear the string buffer
     }
@@ -141,25 +132,26 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 }
 
 
-
-/*
-void DMA2_Stream2_IRQHandler(void)
-{
-	Error(5);
-	Serial_rx_t *rx = (Serial_rx_t*)osPoolAlloc(SerialMpool);
-	sprintf(rx->string, "%s","DMA Handled");
-	osMessagePut(SerialMsgBox, (uint32_t)rx, osWaitForever);
-	
-	NVIC_ClearPendingIRQ(DMA2_Stream2_IRQn);
-	HAL_DMA_IRQHandler(&hdma_usart1_rx);
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+	doneFlag = 18;
 }
-*/
 
 
 
+void DMA1_Stream6_IRQHandler(void)
+{
+	//doneFlag = 20;
+	NVIC_ClearPendingIRQ(DMA1_Stream6_IRQn);
+	HAL_DMA_IRQHandler(&DMA_Tx_Handle);
+}
 
-
-
+void DMA1_Stream5_IRQHandler(void)
+{
+	//doneFlag = 20;
+	LED_Out(8);
+	NVIC_ClearPendingIRQ(DMA1_Stream5_IRQn);
+	HAL_DMA_IRQHandler(&DMA_Rx_Handle);
+}
 
 
 
@@ -175,53 +167,59 @@ void SetupDMA(UART_HandleTypeDef *huart) {
 	uint32_t priorityGroup;
 	uint32_t priority;
 	
-	__DMA2_CLK_ENABLE();
+	__DMA1_CLK_ENABLE();
 	
 	// RX
 
-	DMAR_Rx_Handle.Instance = DMA2_Stream2;
-	DMAR_Rx_Handle.Init.Channel = DMA_CHANNEL_4;
-	DMAR_Rx_Handle.Init.Direction = DMA_PERIPH_TO_MEMORY;
-	DMAR_Rx_Handle.Init.PeriphInc = DMA_PINC_DISABLE;
-	DMAR_Rx_Handle.Init.MemInc = DMA_MINC_ENABLE;
-	DMAR_Rx_Handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-	DMAR_Rx_Handle.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-	DMAR_Rx_Handle.Init.Mode = DMA_CIRCULAR;
-	DMAR_Rx_Handle.Init.Priority = DMA_PRIORITY_LOW;
-	DMAR_Rx_Handle.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
-	HAL_DMA_Init(&DMAR_Rx_Handle);
+	DMA_Rx_Handle.Instance = DMA1_Stream5;
+	DMA_Rx_Handle.Init.Channel = DMA_CHANNEL_4;
+	DMA_Rx_Handle.Init.Direction = DMA_PERIPH_TO_MEMORY;
+	DMA_Rx_Handle.Init.PeriphInc = DMA_PINC_DISABLE;
+	DMA_Rx_Handle.Init.MemInc = DMA_MINC_ENABLE;
+	DMA_Rx_Handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+	DMA_Rx_Handle.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+	DMA_Rx_Handle.Init.Mode = DMA_CIRCULAR;
+	DMA_Rx_Handle.Init.Priority = DMA_PRIORITY_LOW;
+	DMA_Rx_Handle.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+	HAL_DMA_Init(&DMA_Rx_Handle);
 
-	__HAL_LINKDMA(huart, hdmarx, DMAR_Rx_Handle);
+	__HAL_LINKDMA(huart, hdmarx, DMA_Rx_Handle);
 
-	NVIC_SetPriorityGrouping(5);
+
+	//NVIC_SetPriorityGrouping(5);
 	priorityGroup =  NVIC_GetPriorityGrouping();  
-	priority = NVIC_EncodePriority(priorityGroup, 0, 6);
-	NVIC_SetPriority(DMA2_Stream2_IRQn, priority);
-	NVIC_EnableIRQ(DMA2_Stream2_IRQn);
-	
+	priority = NVIC_EncodePriority(priorityGroup, 6, 0);
+	NVIC_SetPriority(DMA1_Stream5_IRQn, priority);
+	NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+
 	
 	
 	// TX
 
-	DMAR_Tx_Handle.Instance = DMA2_Stream1;
-	DMAR_Tx_Handle.Init.Channel = DMA_CHANNEL_4;
-	DMAR_Tx_Handle.Init.Direction = DMA_PERIPH_TO_MEMORY;
-	DMAR_Tx_Handle.Init.PeriphInc = DMA_PINC_DISABLE;
-	DMAR_Tx_Handle.Init.MemInc = DMA_MINC_ENABLE;
-	DMAR_Tx_Handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-	DMAR_Tx_Handle.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-	DMAR_Tx_Handle.Init.Mode = DMA_CIRCULAR;
-	DMAR_Tx_Handle.Init.Priority = DMA_PRIORITY_LOW;
-	DMAR_Tx_Handle.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
-	HAL_DMA_Init(&DMAR_Tx_Handle);
+	DMA_Tx_Handle.Instance = DMA1_Stream6;
+	DMA_Tx_Handle.Init.Channel = DMA_CHANNEL_4;
+	DMA_Tx_Handle.Init.Direction = DMA_MEMORY_TO_PERIPH;
+	DMA_Tx_Handle.Init.PeriphInc = DMA_PINC_DISABLE;
+	DMA_Tx_Handle.Init.MemInc = DMA_MINC_ENABLE;
+	DMA_Tx_Handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+	DMA_Tx_Handle.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+	DMA_Tx_Handle.Init.Mode = DMA_CIRCULAR;
+	DMA_Tx_Handle.Init.Priority = DMA_PRIORITY_LOW;
+	DMA_Tx_Handle.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+	
+	//DMA_Tx_Handle.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+	//DMA_Tx_Handle.Init.MemBurst = DMA_MBURST_SINGLE;
+	//DMA_Tx_Handle.Init.PeriphBurst = DMA_PBURST_SINGLE;
+	
+	HAL_DMA_Init(&DMA_Tx_Handle);
 
-	__HAL_LINKDMA(huart, hdmatx, DMAR_Tx_Handle);
+	__HAL_LINKDMA(huart, hdmatx, DMA_Tx_Handle);
 
-	NVIC_SetPriorityGrouping(5);
+	//NVIC_SetPriorityGrouping(5);
 	priorityGroup =  NVIC_GetPriorityGrouping();  
-	priority = NVIC_EncodePriority(priorityGroup, 0, 6);
-	NVIC_SetPriority(DMA2_Stream1_IRQn, priority);
-	NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+	priority = NVIC_EncodePriority(priorityGroup, 6, 0);
+	NVIC_SetPriority(DMA1_Stream6_IRQn, priority);
+	NVIC_EnableIRQ(DMA1_Stream6_IRQn);
 	
 }
 
@@ -230,9 +228,9 @@ void SetupCallbacks() {
 	uint32_t priorityGroup;
 	uint32_t priority;
 	
-	NVIC_SetPriorityGrouping(5);
+	//NVIC_SetPriorityGrouping(5);
 	priorityGroup =  NVIC_GetPriorityGrouping();  
-	priority = NVIC_EncodePriority(priorityGroup, 0, 6);
+	priority = NVIC_EncodePriority(priorityGroup, 6, 0); // Group, Preempt, Sub
 	NVIC_SetPriority(USART2_IRQn, priority);
 	NVIC_EnableIRQ(USART2_IRQn);
 	
@@ -248,10 +246,12 @@ void SetupCallbacks() {
 void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 	
 	// Debug
+	/*
 	char string[17];
 	sprintf(string, "HAL_StausTypeDef");
 	LCD_Write_At(string, 0, 0, 1);
 	Delay(1000);
+	*/
 
 	// Enable clocks
 	__HAL_RCC_GPIOA_CLK_ENABLE();
@@ -308,37 +308,13 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 //============ Main Init Function =======================//
 //=================================================//
 
-
-
-
 void SerialInit()
 {
 	HAL_StatusTypeDef Ret;
+	LED_Out(1);
 	
-	// Debug ----------------------------------
-	char string[17];
+	sprintf(rx_Out, "Blank");
 	
-	sprintf(string, "Start");
-	LCD_Write_At(string, 0, 0, 1);
-	
-	Delay(100);
-	
-	int clk = (int)HAL_RCC_GetHCLKFreq();
-	sprintf(string, "HW_CLK: %d", clk);
-	LCD_Write_At(string, 0, 0, 1);
-	clk = (int)HAL_RCC_GetSysClockFreq();
-	sprintf(string, "SYS_CLK: %d", clk);
-	LCD_Write_At(string, 0, 1, 0);
-	Delay(5000);
-	// ----------------------------------------
-	
-	osPoolDef(SerialMpool, 16, Serial_rx_t);
-	SerialMpool = osPoolCreate(osPool(SerialMpool));
-	osMessageQDef(SerialMsgBox, 16, Serial_rx_t);
-	SerialMsgBox = osMessageCreate(osMessageQ(SerialMsgBox), NULL);
-	
-	
-
 	// UART handle and configguration
 	//UART_HandleTypeDef UART_Handle; // Made global for now
 	UART_Handle.Instance = USART2;
@@ -353,41 +329,10 @@ void SerialInit()
 
 	Ret = HAL_UART_Init(&UART_Handle);
 	if (Ret != HAL_OK)
-		Error(Ret);
+		LED_Out(15);
 	
-	// Test message queue back to system thread
-	Serial_rx_t *rx = (Serial_rx_t*)osPoolAlloc(SerialMpool);
-	sprintf(rx->string, "%s","Hello");
-	osMessagePut(SerialMsgBox, (uint32_t)rx, osWaitForever);
-
+	LED_Out(2);
 	
-
-	// Start DMA recieve
-	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
-	HAL_UART_Receive_DMA(&UART_Handle, &rxBuffer, 1);
-
-	/*
-	// Testing -------------------------------------------------
-	char Data[17];
-	int Size = 13;
-	
-	sprintf(Data, "Hello World\r\n");
-	
-	while(1) {
-		Ret = HAL_UART_Transmit(&UART_Handle, (uint8_t *)Data, Size, 1000);
-		if (Ret != HAL_OK)
-			Error(Ret);
-		Delay(1000);
-		sprintf(string, "Printing");
-		LCD_Write_At(string, 0, 0, 1);
-	}
-	*/
-
-
-
-
-
-
 
 /*
     The UART HAL driver can be used as follows:
