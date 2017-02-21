@@ -1,9 +1,9 @@
 #include "Timers.h"
-#include "STM32F4xx_hal.h"
-#include "stm32f4xx_hal_tim.h"
 
 static TIM_HandleTypeDef timer_Instance = { .Instance = TIM3};
 
+
+// Initialises a simple timer. Timing has to be set up correctly
 void Init_Timer(void) {
 	__TIM3_CLK_ENABLE();
 	timer_Instance.Init.Prescaler = 1000000;

@@ -3,6 +3,7 @@
 
 #include "STM32F4xx_hal.h"
 #include "stm32f4xx_hal_tim.h"
+#include "Timers.h"
 
 extern TIM_HandleTypeDef timer_Instance;
 extern void Init_Timer(void);
