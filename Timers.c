@@ -13,4 +13,5 @@ void Init_Timer(void) {
 	timer_Instance.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance);
 	HAL_TIM_Base_Start(&timer_Instance);
+	HAL_TIM_Base_Start_IT(&timer_Instance);
 }

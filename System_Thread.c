@@ -41,14 +41,25 @@ void EXTI0_IRQHandler()
 	
 }
 void Init_Interrupt(){
-		
 	
-	RCC->AHB1ENR    |=  ((1UL <<  4)    );
-
-  GPIOB->MODER    &= ~((3UL << 2* 4));
+	RCC->AHB1ENR    |=  RCC_AHB1ENR_GPIOBEN;
+  GPIOB->MODER    &= ~((0UL << 2* 4));
   GPIOB->OSPEEDR  &= ~((3UL << 2* 4));
   GPIOB->PUPDR    &= ~((3UL << 2* 4));
 	GPIOB->PUPDR    |= 	((2UL << 2* 4));
+	
+	NVIC_EnableIRQ(EXTI4_IRQn);
+	SYSCFG->EXTICR[2] |= 0x00000001;
+	EXTI->RTSR |= 0x00000010;
+	EXTI->IMR |= 0x00000010;
+	
+}
+void EXTI4_IRQHandler(void){
+	
+	char string[17];
+	int timerValue = __HAL_TIM_GET_COUNTER(&timer_Instance);
+	sprintf(string, "%d", timerValue);
+	LCD_Write_At(string, 0, 0, 0);
 	
 	
 }
@@ -56,20 +67,23 @@ void Init_Interrupt(){
 		//NVIC_EnableIRQ(TIM6_DAC_IRQn); /*Register interrupt*/
 
 void Thread_System (void const *argument) {
-	
-	
-	
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 	
 	
 	Init_Timer();
+	Init_Interrupt();
+	//LED_On(1);
+	
+	
 	char string[17];
+	
 	while(1) {
-			
+			/*
 			int timerValue = __HAL_TIM_GET_COUNTER(&timer_Instance);
 		
 			sprintf(string, "%d", timerValue);
-			LCD_Write_At(string, 0, 0, 0);
+			LCD_Write_At(string, 0, 0, 0);*/
+		Delay(100);
 	}
 	
 	
