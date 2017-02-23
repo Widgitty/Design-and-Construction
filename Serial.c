@@ -11,9 +11,11 @@
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
 
-//=================================================//
-//============ Global defines =======================//
-//=================================================//
+
+
+//=====================================================//
+//================== Global defines ===================//
+//=====================================================//
 
 UART_HandleTypeDef UART_Handle;
 DMA_HandleTypeDef DMA_Rx_Handle;
@@ -30,9 +32,9 @@ int mode_Int = 2;
 
 
 
-//=================================================//
-//============ Functions =======================//
-//=================================================//
+//=====================================================//
+//================ Interface functions ================//
+//=====================================================//
 void Error(int err) {
 	int i;
 	char string[17];
@@ -47,6 +49,31 @@ void Error(int err) {
 }
 
 
+void SerialInit()
+{
+	HAL_StatusTypeDef Ret;
+	
+	sprintf(rx_Out, "");
+	
+	// UART handle and configguration
+	//UART_HandleTypeDef UART_Handle; // Made global for now
+	UART_Handle.Instance = USART2;
+  UART_Handle.Init.BaudRate = 115200;
+  UART_Handle.Init.WordLength = UART_WORDLENGTH_8B;
+  UART_Handle.Init.StopBits = UART_STOPBITS_1;
+  UART_Handle.Init.Parity = UART_PARITY_NONE;
+  UART_Handle.Init.Mode = UART_MODE_TX_RX;
+  UART_Handle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  UART_Handle.Init.OverSampling = UART_OVERSAMPLING_16;
+
+	Ret = HAL_UART_Init(&UART_Handle);
+	if (Ret != HAL_OK) {
+		//TODO: handle this
+	}
+}
+
+
+// Blocking send for now, could be better implemented in the future
 void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
 	doneFlag = 0;
 	HAL_StatusTypeDef Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
@@ -56,11 +83,13 @@ void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
 	
 }
 
+
 void SerialReceiveStart() {
 	// Start DMA recieve
 	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
 	HAL_UART_Receive_DMA(&UART_Handle, &rxBuffer, 1);
 }
+
 
 void SerialReceive() {
 	if (strcmp(rx_Out, "") != 0) {
@@ -75,6 +104,7 @@ void SerialReceive() {
 	}
 }
 
+
 void SerialCheckMode(int *mode) {
 	if (mode_Int != 10) {
 		*mode = mode_Int;
@@ -83,9 +113,12 @@ void SerialCheckMode(int *mode) {
 }
 
 
-//=================================================//
-//============ Redefine HAL function for backwards compatibility =======================//
-//=================================================//
+
+//=====================================================//
+//= Redefine HAL function for backwards compatibility =//
+//=====================================================//
+// This function has been copied as-is from the
+// HAL V1.6.0 UART library.
 
 HAL_StatusTypeDef Custom_HAL_UART_AbortTransmit(UART_HandleTypeDef *huart)
 {
@@ -117,10 +150,11 @@ HAL_StatusTypeDef Custom_HAL_UART_AbortTransmit(UART_HandleTypeDef *huart)
   return HAL_OK;
 }
 
-//=================================================//
-//============ Callbacks =======================//
-//=================================================//
 
+
+//=====================================================//
+//===================== Callbacks =====================//
+//=====================================================//
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 	doneFlag = 17;
@@ -129,6 +163,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 	Custom_HAL_UART_AbortTransmit(huart);
 	
 }
+
 
 int rxState = 0; 
 	
@@ -195,6 +230,7 @@ void DMA1_Stream6_IRQHandler(void)
 	HAL_DMA_IRQHandler(&DMA_Tx_Handle);
 }
 
+
 void DMA1_Stream5_IRQHandler(void)
 {
 	NVIC_ClearPendingIRQ(DMA1_Stream5_IRQn);
@@ -203,14 +239,9 @@ void DMA1_Stream5_IRQHandler(void)
 
 
 
-
-
-
-
-
-//=================================================//
-//============ Init Callbacks =======================//
-//=================================================//
+//=====================================================//
+//= Initialisation callback and supporting functions  =//
+//=====================================================//
 
 
 void SetupDMA(UART_HandleTypeDef *huart) {
@@ -236,14 +267,12 @@ void SetupDMA(UART_HandleTypeDef *huart) {
 
 	__HAL_LINKDMA(huart, hdmarx, DMA_Rx_Handle);
 
-
 	//NVIC_SetPriorityGrouping(5);
 	priorityGroup =  NVIC_GetPriorityGrouping();  
 	priority = NVIC_EncodePriority(priorityGroup, 6, 0);
 	NVIC_SetPriority(DMA1_Stream5_IRQn, priority);
 	NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 
-	
 	
 	// TX
 
@@ -274,6 +303,7 @@ void SetupDMA(UART_HandleTypeDef *huart) {
 	
 }
 
+
 void SetupCallbacks() {
 
 	uint32_t priorityGroup;
@@ -286,8 +316,6 @@ void SetupCallbacks() {
 	NVIC_EnableIRQ(USART2_IRQn);
 
 }
-
-
 
 
 // Callback from HAL
@@ -307,39 +335,6 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
 	SetupCallbacks();
-	SetupDMA(huart);
-	
+	SetupDMA(huart);	
 }
 
-
-
-
-
-
-
-//=================================================//
-//============ Main Init Function =======================//
-//=================================================//
-
-void SerialInit()
-{
-	HAL_StatusTypeDef Ret;
-	
-	sprintf(rx_Out, "Blank");
-	
-	// UART handle and configguration
-	//UART_HandleTypeDef UART_Handle; // Made global for now
-	UART_Handle.Instance = USART2;
-  UART_Handle.Init.BaudRate = 115200;
-  UART_Handle.Init.WordLength = UART_WORDLENGTH_8B;
-  UART_Handle.Init.StopBits = UART_STOPBITS_1;
-  UART_Handle.Init.Parity = UART_PARITY_NONE;
-  UART_Handle.Init.Mode = UART_MODE_TX_RX;
-  UART_Handle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  UART_Handle.Init.OverSampling = UART_OVERSAMPLING_16;
-
-	Ret = HAL_UART_Init(&UART_Handle);
-	if (Ret != HAL_OK) {
-		//TODO: handle this
-	}
-}
