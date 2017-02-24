@@ -26,10 +26,11 @@ uint8_t rxString[17]; // where we build our string from characters coming in
 int rxindex = 0; // index for going though rxString
 
 int doneFlag = 0;
+int errorFlag = 0;
 
 char rx_Out[17];
 
-int mode_Int = 2;
+int mode_Int = 0;
 
 int rxState = 0;
 
@@ -59,12 +60,12 @@ void SendString(char* string) {
 void WiFiInit() {
 	SendString("AT+RST\r\n");
 	SendString("AT+RST\r\n");
-	HAL_UART_DeInit(&UART_Handle);
-	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
-	HAL_UART_Init(&UART_Handle);
-	SerialReceiveStart();
+	//HAL_UART_DeInit(&UART_Handle);
+	//__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
+	//HAL_UART_Init(&UART_Handle);
+	//SerialReceiveStart();
 	SendString("AT+CWMODE=2\r\n");
-	SendString("AT+CWSAP=\"MultiMeter1\",\"123\",1,0\r\n");
+	SendString("AT+CWSAP=\"MultiMeterWorking\",\"123\",1,0\r\n");
 	SendString("AT+CIPMUX=1\r\n");
 	SendString("AT+CWDHCP=0,0\r\n");
 	SendString("AT+CIPAP=\"192.168.1.1\"\r\n");
@@ -245,7 +246,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	}
 	
 	else if (rxState == 2) { // Expect mode
-		if ((rxBuffer - '0') < 3) { // valid mode
+		if (((rxBuffer - '0') < 3) & (rxBuffer > '0')){ // valid mode
 			mode_Int = (int) rxBuffer - '0';
 		}
 		rxState = 0; // String complete, go back to check
@@ -255,11 +256,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-	char string[17];
-	Error(7);
-	sprintf(string, "Serial Fail");
-	LCD_Write_At(string, 0, 0, 1);
-	Delay(5000);	
+	errorFlag = 1;
 }
 
 
@@ -275,6 +272,7 @@ void DMA1_Stream5_IRQHandler(void)
 	NVIC_ClearPendingIRQ(DMA1_Stream5_IRQn);
 	HAL_DMA_IRQHandler(&DMA_Rx_Handle);
 }
+
 
 
 
@@ -374,7 +372,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 	GPIO_InitStructure.Alternate = GPIO_AF7_USART2;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
-	SetupCallbacks();
+	//SetupCallbacks();
 	SetupDMA(huart);	
 }
 
