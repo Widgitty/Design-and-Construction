@@ -20,7 +20,10 @@
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
+#define resistance 10000;
  
+static TIM_HandleTypeDef timer_Instance = { .Instance = TIM3}; 
+
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
 // Thread priority set to high, as system thread should not be blockable
@@ -34,28 +37,26 @@ int Init_Thread_System (void) {
   return(0);
 }
 
-static TIM_HandleTypeDef timer_Instance = { .Instance = TIM3};
 
-void EXTI0_IRQHandler()
-{
-	
-}
+
+
 
 void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 	
 	char string[17];
 	
-	/*
+	
+	
+	
 	while(1) {
 			
 		int timerValue = __HAL_TIM_GET_COUNTER(&timer_Instance);
-		
 		sprintf(string, "%d", timerValue);
 		LCD_Write_At(string, 0, 0, 0);
 		Delay(100);
-	}*/
-	
+	}
+	//HAL_TIM_Base_Start(&timer_Instance);
 	
 	// unreachable code below
 	
@@ -96,6 +97,10 @@ void Thread_System (void const *argument) {
 			case 0x0400:
 				unit[0] = (char)0xDE;
 				mode = 2;
+			break;
+			case 0x0800:
+				unit[0] = 'F';
+				mode = 3;
 			break;
 			default:
 				//blah

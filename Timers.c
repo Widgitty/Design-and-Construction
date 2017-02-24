@@ -7,9 +7,9 @@ static TIM_HandleTypeDef timer_Instance = { .Instance = TIM3};
 // Initialises a simple timer. Timing has to be set up correctly
 void Timer_Init(void) {
 	__TIM3_CLK_ENABLE();
-	timer_Instance.Init.Prescaler = 1000000;
+	timer_Instance.Init.Prescaler = 1;
 	timer_Instance.Init.CounterMode = TIM_COUNTERMODE_UP;
-	timer_Instance.Init.Period = 1000;
+	timer_Instance.Init.Period = 10000;
 	timer_Instance.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer_Instance.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance);
@@ -38,4 +38,5 @@ void EXTI4_IRQHandler(void){
 	LED_On(6);
 	LED_On(5);
 	LED_On(4);
+	HAL_TIM_Base_Stop(&timer_Instance);
 }
