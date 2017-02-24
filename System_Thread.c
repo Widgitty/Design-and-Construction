@@ -14,8 +14,11 @@
 #include "GPIO.h"
 #include "LCD_Thread.h"
 #include "Calculations.h"
+#include "Serial.h"
+#include "String.h"
 
-// replace Delay with osDelay for compatibility with RTOS
+// replace Delay with osDelay for comp
+atibility with RTOS
 #define Delay osDelay
  
 void Thread_System (void const *argument);                 // thread function
@@ -35,6 +38,9 @@ int Init_Thread_System (void) {
 void Thread_System (void const *argument) {
 	
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
+	
+	SerialInit();
+	SerialReceiveStart();
 		
 	uint32_t value = 0;
 	double value_calk = 0;
@@ -52,6 +58,7 @@ void Thread_System (void const *argument) {
 	int minRange = 0;
 	
 	GPIOD->ODR = 0;
+	LCD_Write_At(NULL, 0, 0, 1);
 
 	while (1) {
 		uint32_t btns = 0;
@@ -74,6 +81,23 @@ void Thread_System (void const *argument) {
 			break;
 			default:
 				//blah
+			break;
+		}
+		
+		switch (mode) {
+			case 0:
+				unit[0] = 'A';
+			break;
+			case 1:
+				unit[0] = 'V';
+			break;
+			case 2:
+				unit[0] = (char)0xDE;
+			break;
+			default:
+				sprintf(string, "Undefined mode!");
+				LCD_Write_At(string, 0, 0, 0);
+				Delay(1000);
 			break;
 		}
 		
@@ -130,14 +154,25 @@ void Thread_System (void const *argument) {
 		Delay(100);
 		*/
 		
-		
+
 		sprintf(string, "%1.9lf", value_calk);
 		LCD_Write_At(string, 0, 0, 0);
 		LCD_Write_At(unit, 15, 0, 0);
+		
 		if (range == 1) {
 			LCD_Write_At("m", 14, 0, 0);
+			sprintf(string, "%s m%s\r\n", string, unit);
 		} else {
 			LCD_Write_At(" ", 14, 0, 0);
+			sprintf(string, "%s %s\r\n", string, unit);
 		}
+
+		SerialSend((uint8_t*)string, strlen(string), 1000);
+		
+		SerialReceive();
+		
+		SerialCheckMode(&mode);
+
+		
 	}
 }
