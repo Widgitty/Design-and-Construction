@@ -40,51 +40,21 @@ void EXTI0_IRQHandler()
 {
 	
 }
-void Init_Interrupt(){
-	
-	RCC->AHB1ENR    |=  RCC_AHB1ENR_GPIOBEN;
-  GPIOB->MODER    &= ~((0UL << 2* 4));
-  GPIOB->OSPEEDR  &= ~((3UL << 2* 4));
-  GPIOB->PUPDR    &= ~((3UL << 2* 4));
-	GPIOB->PUPDR    |= 	((2UL << 2* 4));
-	
-	NVIC_EnableIRQ(EXTI4_IRQn);
-	SYSCFG->EXTICR[2] |= 0x00000001;
-	EXTI->RTSR |= 0x00000010;
-	EXTI->IMR |= 0x00000010;
-	
-}
-void EXTI4_IRQHandler(void){
-	
-	char string[17];
-	int timerValue = __HAL_TIM_GET_COUNTER(&timer_Instance);
-	sprintf(string, "%d", timerValue);
-	LCD_Write_At(string, 0, 0, 0);
-	
-	
-}
-	  //NVIC_EnableIRQ(EXTI0_IRQHandler);
-		//NVIC_EnableIRQ(TIM6_DAC_IRQn); /*Register interrupt*/
 
 void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 	
-	
-	Init_Timer();
-	Init_Interrupt();
-	//LED_On(1);
-	
-	
 	char string[17];
 	
+	/*
 	while(1) {
-			/*
-			int timerValue = __HAL_TIM_GET_COUNTER(&timer_Instance);
+			
+		int timerValue = __HAL_TIM_GET_COUNTER(&timer_Instance);
 		
-			sprintf(string, "%d", timerValue);
-			LCD_Write_At(string, 0, 0, 0);*/
+		sprintf(string, "%d", timerValue);
+		LCD_Write_At(string, 0, 0, 0);
 		Delay(100);
-	}
+	}*/
 	
 	
 	// unreachable code below
@@ -109,6 +79,7 @@ void Thread_System (void const *argument) {
 
 	while (1) {
 		uint32_t btns = 0;
+		Delay(10);
 		
 		// Read mode
 		btns = SWT_Debounce();
@@ -173,18 +144,6 @@ void Thread_System (void const *argument) {
 				GPIO_Off(0); // Disconnect all inputs if possible
 			break;
 		}
-		
-		// Put to LCD
-		/*
-		//LCD_Clear();
-		LCD_GotoXY(0,0);
-		sprintf(string, "                ");
-		sprintf(string, "%1.9lf", value_calk);
-		LCD_PutS(string);
-		LCD_GotoXY(15,0);
-		LCD_PutS(unit);
-		Delay(100);
-		*/
 		
 		
 		sprintf(string, "%1.9lf", value_calk);

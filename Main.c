@@ -12,6 +12,7 @@
 #include "ADC.h"
 #include "GPIO.h"
 #include "LCD_Thread.h"
+#include "Timers.h"
 
 
 
@@ -24,6 +25,8 @@
  *----------------------------------------------------------------------------*/
 int main (void) {
 	
+	
+	
 	osKernelInitialize();     
 
   HAL_Init();           
@@ -34,6 +37,8 @@ int main (void) {
   SWT_Init();
 	ADC1_Init();
 	GPIO_Init();
+	Timer_Init();
+	Interrupt_Init();
 	
 	
   LCD_Initpins();	
@@ -42,8 +47,7 @@ int main (void) {
 	LCD_Init();
 	LCD_DriverOn();
 	LCD_On(1);
-	
-	Init_Thread_System();
 	Init_Thread_LCD();
+	Init_Thread_System();
 
 }

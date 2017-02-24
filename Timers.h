@@ -6,6 +6,8 @@
 #include "Timers.h"
 
 extern TIM_HandleTypeDef timer_Instance;
-extern void Init_Timer(void);
+extern void Timer_Init(void);
+extern void Interrupt_Init(void);
+extern void EXTI4_IRQHandler(void);
 
 #endif
