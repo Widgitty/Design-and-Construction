@@ -21,14 +21,17 @@ UART_HandleTypeDef UART_Handle;
 DMA_HandleTypeDef DMA_Rx_Handle;
 DMA_HandleTypeDef DMA_Tx_Handle;
 uint8_t rxBuffer = '\000';
-uint8_t rxString[100]; // where we build our string from characters coming in
+uint8_t dumpBuffer[100];
+uint8_t rxString[17]; // where we build our string from characters coming in
 int rxindex = 0; // index for going though rxString
 
 int doneFlag = 0;
 
-char rx_Out[100];
+char rx_Out[17];
 
 int mode_Int = 2;
+
+int rxState = 0;
 
 
 
@@ -48,9 +51,35 @@ void Error(int err) {
 	}
 }
 
+void SendString(char* string) {
+	SerialSend((uint8_t*)string, strlen(string), 1000);
+	Delay(1000);
+}
 
-void SerialInit()
-{
+void WiFiInit() {
+	SendString("AT+RST\r\n");
+	SendString("AT+RST\r\n");
+	HAL_UART_DeInit(&UART_Handle);
+	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
+	HAL_UART_Init(&UART_Handle);
+	SerialReceiveStart();
+	SendString("AT+CWMODE=2\r\n");
+	SendString("AT+CWSAP=\"MultiMeter1\",\"123\",1,0\r\n");
+	SendString("AT+CIPMUX=1\r\n");
+	SendString("AT+CWDHCP=0,0\r\n");
+	SendString("AT+CIPAP=\"192.168.1.1\"\r\n");
+	SendString("AT+CIPSERVER=1,1138\r\n");
+}
+
+void SerialReceiveDump() {
+	// Start DMA recieve
+	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
+	//__HAL_DMA_ENABLE(&DMA_Rx_Handle);
+	rxState = 10;
+	HAL_UART_Receive_DMA(&UART_Handle, dumpBuffer, 100);
+}
+
+void SerialInit() {
 	HAL_StatusTypeDef Ret;
 	
 	sprintf(rx_Out, "");
@@ -70,6 +99,10 @@ void SerialInit()
 	if (Ret != HAL_OK) {
 		//TODO: handle this
 	}
+	SerialReceiveStart();
+	//SerialReceiveDump();
+	Delay(100);
+	WiFiInit();
 }
 
 
@@ -87,8 +120,12 @@ void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
 void SerialReceiveStart() {
 	// Start DMA recieve
 	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
+	//__HAL_DMA_ENABLE(&DMA_Rx_Handle);
+	rxState = 0;
 	HAL_UART_Receive_DMA(&UART_Handle, &rxBuffer, 1);
 }
+
+
 
 
 void SerialReceive() {
@@ -165,12 +202,11 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 }
 
 
-int rxState = 0; 
+
 	
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     __HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
-	
 	
 	if (rxState == 0) { // Check what to expect
 		if (rxBuffer == 's') {
@@ -190,7 +226,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			rxString[rxindex] = 0;
 			sprintf(rx_Out, "%s", rxString);
 			rxindex = 0;
-			for (i = 0; i < 100; i++) rxString[i] = 0; // Clear the string buffer
+			for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
 			rxState = 0; // String complete, go back to check
     }
 
@@ -198,10 +234,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     {
         rxString[rxindex] = rxBuffer; // Add that character to the string
         rxindex++;
-        if (rxindex > 100) // User typing too much, we can't have commands that big
+        if (rxindex >= 17) // User typing too much, we can't have commands that big
         {
             rxindex = 0;
-            for (i = 0; i < 100; i++) rxString[i] = 0; // Clear the string buffer
+            for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
+						rxState = 0;
+						sprintf(rx_Out, "String too long");
         }
     }
 	}
@@ -212,6 +250,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		}
 		rxState = 0; // String complete, go back to check
 	}
+	
 }
 
 
@@ -264,6 +303,7 @@ void SetupDMA(UART_HandleTypeDef *huart) {
 	DMA_Rx_Handle.Init.Priority = DMA_PRIORITY_LOW;
 	DMA_Rx_Handle.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
 	HAL_DMA_Init(&DMA_Rx_Handle);
+	//__HAL_DMA_DISABLE(&DMA_Rx_Handle);
 
 	__HAL_LINKDMA(huart, hdmarx, DMA_Rx_Handle);
 
