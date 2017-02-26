@@ -34,6 +34,10 @@ int mode_Int = 0;
 
 int rxState = 0;
 
+int WiFiEnabled = 0;
+
+int ATResponse = 0;
+
 
 
 //=====================================================//
@@ -53,24 +57,68 @@ void Error(int err) {
 }
 
 void SendString(char* string) {
-	SerialSend((uint8_t*)string, strlen(string), 1000);
-	Delay(1000);
+	
+	doneFlag = 0;
+	HAL_StatusTypeDef Ret = HAL_UART_Transmit_DMA(&UART_Handle, (uint8_t*)string, strlen(string));
+	while (doneFlag == 0) {
+		Delay(100);
+	}
+	Delay(100);
 }
 
-void WiFiInit() {
-	SendString("AT+RST\r\n");
-	SendString("AT+RST\r\n");
-	//HAL_UART_DeInit(&UART_Handle);
-	//__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
-	//HAL_UART_Init(&UART_Handle);
-	//SerialReceiveStart();
-	SendString("AT+CWMODE=2\r\n");
-	SendString("AT+CWSAP=\"MultiMeterWorking\",\"123\",1,0\r\n");
-	SendString("AT+CIPMUX=1\r\n");
-	SendString("AT+CWDHCP=0,0\r\n");
-	SendString("AT+CIPAP=\"192.168.1.1\"\r\n");
-	SendString("AT+CIPSERVER=1,1138\r\n");
+int WiFiInit() {
+	rxState = 3; // Check for AT responses
+	int i = 0;
+	int ret = 1;
+	
+	for (i=0; i<3; i++) { 
+		SendString("AT+RST\r\n");
+		Delay(100);
+		//check response
+		if (ATResponse == 1) {
+			WiFiEnabled = 1;
+			ret = 0;
+			break;
+		}
+	}
+	ATResponse = 0;
+	
+	if (WiFiEnabled == 1) {
+		
+		SendString("AT+CWMODE=2\r\n");
+		if (ATResponse != 1)
+			ret = 1;
+		ATResponse = 0;
+		
+		SendString("AT+CWSAP=\"MultiMeter!\",\"123\",1,0\r\n");
+		if (ATResponse != 1)
+			ret = 1;
+		ATResponse = 0;
+		
+		SendString("AT+CIPMUX=1\r\n");
+		if (ATResponse != 1)
+			ret = 1;
+		ATResponse = 0;
+				
+		SendString("AT+CWDHCP=0,0\r\n");
+		if (ATResponse != 1)
+			ret = 1;
+		ATResponse = 0;
+		
+		SendString("AT+CIPAP=\"192.168.1.1\"\r\n");
+		if (ATResponse != 1)
+			ret = 1;
+		ATResponse = 0;
+		
+		SendString("AT+CIPSERVER=1,1138\r\n");
+		if (ATResponse != 1)
+			ret = 1;
+		ATResponse = 0;
+	}
+	
+	return(ret);
 }
+
 
 void SerialReceiveDump() {
 	// Start DMA recieve
@@ -84,6 +132,7 @@ void SerialInit() {
 	HAL_StatusTypeDef Ret;
 	
 	sprintf(rx_Out, "");
+	sprintf((char*)rxString, "");
 	
 	// UART handle and configguration
 	//UART_HandleTypeDef UART_Handle; // Made global for now
@@ -103,12 +152,23 @@ void SerialInit() {
 	SerialReceiveStart();
 	//SerialReceiveDump();
 	Delay(100);
-	WiFiInit();
+	if (WiFiInit() != 0) {
+		sprintf(rx_Out, "WiFi error");
+		WiFiEnabled = 0;
+		rxState = 0;
+	}
 }
 
 
 // Blocking send for now, could be better implemented in the future
 void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
+	
+	// If in WiFI mode, send the data AT command
+	if (WiFiEnabled == 1) {
+		char string[17];
+		sprintf(string, "AT+CIPSEND=0,%d\r\n", Size);
+		SendString(string);
+	}
 	doneFlag = 0;
 	HAL_StatusTypeDef Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
 	while (doneFlag == 0) {
@@ -250,6 +310,36 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			mode_Int = (int) rxBuffer - '0';
 		}
 		rxState = 0; // String complete, go back to check
+	}
+	
+	else if (rxState == 3) { // Check response to AT command
+		int i = 0;
+		if (rxBuffer == '\r') {  // Ignore /r
+		
+		}
+		else if (rxBuffer == '\n') { // If new line
+			rxString[rxindex] = 0;
+			if (strcmp((char*)rxString, "OK") == 0) {
+				ATResponse = 1;
+			}
+			if (strcmp((char*)rxString, "ERROR") == 0) {
+				ATResponse = 2;
+			}
+			rxindex = 0;
+			for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
+    }
+
+    else
+    {
+        rxString[rxindex] = rxBuffer; // Add that character to the string
+        rxindex++;
+        if (rxindex >= 17) // User typing too much, we can't have commands that big
+        {
+            rxindex = 0;
+            for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
+						sprintf(rx_Out, "");
+        }
+    }
 	}
 	
 }

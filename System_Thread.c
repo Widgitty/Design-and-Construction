@@ -77,6 +77,16 @@ void Thread_System (void const *argument) {
 				unit[0] = (char)0xDE;
 				mode = 2;
 			break;
+			case 0x8000:
+				sprintf(string, "Enabling coms");
+				LCD_Write_At(string, 0, 0, 1);
+				Delay(1000);
+				sprintf(string, "WiFi detected");
+				LCD_Write_At(string, 0, 1, 0);
+				Delay(1000);
+				LCD_Write_At("", 0, 0, 1);
+				// last button, enable coms
+			break;
 			default:
 				//blah
 			break;
