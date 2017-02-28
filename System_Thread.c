@@ -52,6 +52,9 @@ void Thread_System (void const *argument) {
 	SerialReceiveStart();
 	
 	
+	
+	
+	
 	//HAL_TIM_Base_Start(&timer_Instance);
 	
 	// unreachable code below
