@@ -17,8 +17,7 @@
 #include "Serial.h"
 #include "String.h"
 
-// replace Delay with osDelay for comp
-atibility with RTOS
+// replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
  
 void Thread_System (void const *argument);                 // thread function
@@ -50,12 +49,7 @@ void Thread_System (void const *argument) {
 	// Ranging perameters
 	int range = 0; // lower = larger range / lower resolution (for Amps)
 	int mode = 0; // C, V, R
-	float OuterUpperLimit = 2.5;
-	float OuterLowerLimit = 0.5;
-	float InnerUpperLimit = 1.6;
-	float InnerLowerLimit = 1.4;
-	int maxRange = 1;
-	int minRange = 0;
+
 	
 	GPIOD->ODR = 0;
 	LCD_Write_At(NULL, 0, 0, 1);

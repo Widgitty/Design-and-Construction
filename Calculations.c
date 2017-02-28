@@ -33,8 +33,9 @@ double adcConv(int mode, double value, int *rangep){
 	
 	// RESISTANCE MODE - Use ohms law to calculate R. 
 	if (mode ==	2){ 
+		*rangep = 0;
 		LED_Out(4);
-		output = switchRange(value, rangep, 6.66) / inputCurrent;		
+		output = ((double)value / (pow(2.0, 16.0)) * 3.3) / inputCurrent;		
 	} 	
 
 	return output;		
@@ -47,20 +48,16 @@ double switchRange(int value, int *rangep, double scale){
 	int minRange = 0;
 	double output;
 	
-	if(*rangep == 0){
-		output = (((double)value / (pow(2.0, 16.0)) * 3.3)-1.5) * scale;	
-		}
-	if(*rangep == 1){
-		output = (((double)value / (pow(2.0, 16.0)) * 3.3)-1.5) * scale*0.1000;	
-		}
+	output = (((double)value / (pow(2.0, 16.0)) * 3.3)-1.5) * scale;	
 	
-	if ((output > -0.1) && (output < 0.1)){
- 
+	
+	
+	if ((output > -1) && (output < 1)){
 		if (*rangep < maxRange) {
 				*rangep = 1;
 		}
 		else {
-				// TODO: Print error to LCD
+				//*rangep = 0;
 		}
 	}
 	else {
@@ -71,6 +68,10 @@ double switchRange(int value, int *rangep, double scale){
 		else {
 				// TODO: Print error to LCD
 		}
+	}
+	
+	if(*rangep == 1){
+	output *= 1000;	
 	}
 	
 	return output;
