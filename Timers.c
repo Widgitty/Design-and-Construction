@@ -1,13 +1,19 @@
 #include "Timers.h"
 #include "LED.h"
+#include "stm32f4xx_hal_rcc.h"
 
-static TIM_HandleTypeDef timer_Instance = { .Instance = TIM3};
+static TIM_HandleTypeDef timer_Instance = { .Instance = TIM2};
 
 
 // Initialises a simple timer. Timing has to be set up correctly
 void Timer_Init(void) {
-	__TIM3_CLK_ENABLE();
-	timer_Instance.Init.Prescaler = 1;
+	
+	uint32_t clockFreq = HAL_RCC_GetPCLK1Freq();
+   // clockFreq/5000 is about right 
+	//TODO should probably check timer speed for accuracy
+	
+	__TIM2_CLK_ENABLE();
+	timer_Instance.Init.Prescaler = clockFreq / 5000;
 	timer_Instance.Init.CounterMode = TIM_COUNTERMODE_UP;
 	timer_Instance.Init.Period = 10000;
 	timer_Instance.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;

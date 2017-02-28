@@ -22,7 +22,7 @@
 #define Delay osDelay
 #define resistance 10000;
  
-static TIM_HandleTypeDef timer_Instance = { .Instance = TIM3}; 
+static TIM_HandleTypeDef timer_Instance = { .Instance = TIM2}; 
 
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
@@ -50,11 +50,18 @@ void Thread_System (void const *argument) {
 	
 	
 	while(1) {
-			
+		/*	
 		int timerValue = __HAL_TIM_GET_COUNTER(&timer_Instance);
 		sprintf(string, "%d", timerValue);
-		LCD_Write_At(string, 0, 0, 0);
-		Delay(100);
+		
+		LCD_Write_At(string, 0, 0, 0);*/
+		if(__HAL_TIM_GET_COUNTER(&timer_Instance) < 1000){
+			LED_On(0);
+		}
+		else
+		{
+			LED_Off(0);
+		}
 	}
 	//HAL_TIM_Base_Start(&timer_Instance);
 	
