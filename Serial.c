@@ -157,6 +157,9 @@ void SerialInit() {
 		WiFiEnabled = 0;
 		rxState = 0;
 	}
+	else {
+		rxState = 4;
+	}
 }
 
 
@@ -263,11 +266,14 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 }
 
 
-
+int pos = 0;
 	
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    __HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
+  __HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
+	
+	char WiFiString[5];
+	sprintf(WiFiString, "+IPD");
 	
 	if (rxState == 0) { // Check what to expect
 		if (rxBuffer == 's') {
@@ -288,7 +294,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			sprintf(rx_Out, "%s", rxString);
 			rxindex = 0;
 			for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
-			rxState = 0; // String complete, go back to check
+			
+			// String complete, go back to check
+			if (WiFiEnabled == 1)
+				rxState = 4;
+			else
+				rxState = 0;
     }
 
     else
@@ -299,17 +310,24 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         {
             rxindex = 0;
             for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
-						rxState = 0;
+						if (WiFiEnabled == 1)
+							rxState = 4;
+						else
+							rxState = 0;
 						sprintf(rx_Out, "String too long");
         }
     }
 	}
 	
 	else if (rxState == 2) { // Expect mode
-		if (((rxBuffer - '0') < 3) & (rxBuffer > '0')){ // valid mode
+		if (((rxBuffer - '0') < 3) & (rxBuffer >= '0')){ // valid mode
 			mode_Int = (int) rxBuffer - '0';
 		}
-		rxState = 0; // String complete, go back to check
+		// RX complete, go back to check
+		if (WiFiEnabled == 1)
+			rxState = 4;
+		else
+			rxState = 0;
 	}
 	
 	else if (rxState == 3) { // Check response to AT command
@@ -340,6 +358,24 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 						sprintf(rx_Out, "");
         }
     }
+	}
+	
+	else if (rxState == 4) {
+		if (pos == 0) {
+			if (rxBuffer == WiFiString[0]) {
+				pos++;
+			}
+		}
+		else if (rxBuffer == WiFiString[pos]) {
+			pos++;
+		}
+		else {
+			pos = 0;
+		}
+		
+		if (pos >=3) {
+			rxState = 0;
+		}
 	}
 	
 }
