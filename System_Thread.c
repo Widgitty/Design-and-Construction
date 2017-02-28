@@ -13,6 +13,7 @@
 #include "System_Thread.h"
 #include "GPIO.h"
 #include "LCD_Thread.h"
+#include "Calculations.h"
 #include "Serial.h"
 #include "String.h"
 
@@ -48,12 +49,7 @@ void Thread_System (void const *argument) {
 	// Ranging perameters
 	int range = 0; // lower = larger range / lower resolution (for Amps)
 	int mode = 0; // C, V, R
-	float OuterUpperLimit = 2.5;
-	float OuterLowerLimit = 0.5;
-	float InnerUpperLimit = 1.6;
-	float InnerLowerLimit = 1.4;
-	int maxRange = 1;
-	int minRange = 0;
+
 	
 	GPIOD->ODR = 0;
 	LCD_Write_At(NULL, 0, 0, 1);
@@ -102,14 +98,10 @@ void Thread_System (void const *argument) {
 		// Read ADC
 		value = read_ADC1();
 		value = (value *16);
-		GPIOD->ODR = value;
 		
-		value_calk = ((double)value / (pow(2.0, 16.0))) * 3.3;
-		//value_calk = (double)0.5;
-		
-		// Convert to value
-		// TODO: insert fomula here (depends on range and mode)
-		
+		value_calk = adcConv(mode, value, &range);
+
+		/*
 		// Switch range based on limits
 		if ((value_calk > InnerLowerLimit) & (value_calk < InnerUpperLimit)){
 			if (range < maxRange) {
@@ -127,6 +119,8 @@ void Thread_System (void const *argument) {
 				// TODO: Print error to LCD
 			}
 		}
+		*/
+		
 		
 		
 		// Set output based on range
