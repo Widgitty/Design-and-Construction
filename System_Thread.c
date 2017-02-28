@@ -17,6 +17,9 @@
 #include "Timers.h"
 #include "cmsis_os.h"
 #include "core_cm4.h"
+#include "Calculations.h"
+#include "Serial.h"
+#include "String.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -45,24 +48,10 @@ void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 	
 	char string[17];
+	SerialInit();
+	SerialReceiveStart();
 	
 	
-	
-	
-	while(1) {
-		/*	
-		int timerValue = __HAL_TIM_GET_COUNTER(&timer_Instance);
-		sprintf(string, "%d", timerValue);
-		
-		LCD_Write_At(string, 0, 0, 0);*/
-		if(__HAL_TIM_GET_COUNTER(&timer_Instance) < 1000){
-			LED_On(0);
-		}
-		else
-		{
-			LED_Off(0);
-		}
-	}
 	//HAL_TIM_Base_Start(&timer_Instance);
 	
 	// unreachable code below
@@ -76,14 +65,12 @@ void Thread_System (void const *argument) {
 	// Ranging perameters
 	int range = 0; // lower = larger range / lower resolution (for Amps)
 	int mode = 0; // C, V, R
-	float OuterUpperLimit = 2.5;
-	float OuterLowerLimit = 0.5;
-	float InnerUpperLimit = 1.6;
-	float InnerLowerLimit = 1.4;
-	int maxRange = 1;
-	int minRange = 0;
+
 	
-	//GPIOD->ODR = 0;
+	
+	GPIOD->ODR = 0;
+	LCD_Write_At(NULL, 0, 0, 1);
+
 
 	while (1) {
 		uint32_t btns = 0;
@@ -114,17 +101,30 @@ void Thread_System (void const *argument) {
 			break;
 		}
 		
+		switch (mode) {
+			case 0:
+				unit[0] = 'A';
+			break;
+			case 1:
+				unit[0] = 'V';
+			break;
+			case 2:
+				unit[0] = (char)0xDE;
+			break;
+			default:
+				sprintf(string, "Undefined mode!");
+				LCD_Write_At(string, 0, 0, 0);
+				Delay(1000);
+			break;
+		}
+		
 		// Read ADC
 		value = read_ADC1();
 		value = (value *16);
-		GPIOD->ODR = value;
 		
-		value_calk = ((double)value / (pow(2.0, 16.0))) * 3.3;
-		//value_calk = (double)0.5;
-		
-		// Convert to value
-		// TODO: insert fomula here (depends on range and mode)
-		
+		value_calk = adcConv(mode, value, &range);
+
+		/*
 		// Switch range based on limits
 		if ((value_calk > InnerLowerLimit) & (value_calk < InnerUpperLimit)){
 			if (range < maxRange) {
@@ -142,6 +142,8 @@ void Thread_System (void const *argument) {
 				// TODO: Print error to LCD
 			}
 		}
+		*/
+		
 		
 		
 		// Set output based on range
@@ -156,15 +158,38 @@ void Thread_System (void const *argument) {
 				GPIO_Off(0); // Disconnect all inputs if possible
 			break;
 		}
+
+		// Put to LCD
+		/*
+		//LCD_Clear();
+		LCD_GotoXY(0,0);
+		sprintf(string, "                ");
+		sprintf(string, "%1.9lf", value_calk);
+		LCD_PutS(string);
+		LCD_GotoXY(15,0);
+		LCD_PutS(unit);
+		Delay(100);
+		*/
 		
-		
+
 		sprintf(string, "%1.9lf", value_calk);
 		LCD_Write_At(string, 0, 0, 0);
 		LCD_Write_At(unit, 15, 0, 0);
+		
 		if (range == 1) {
 			LCD_Write_At("m", 14, 0, 0);
+			sprintf(string, "%s m%s\r\n", string, unit);
 		} else {
 			LCD_Write_At(" ", 14, 0, 0);
+			sprintf(string, "%s %s\r\n", string, unit);
 		}
+
+		SerialSend((uint8_t*)string, strlen(string), 1000);
+		
+		SerialReceive();
+		
+		SerialCheckMode(&mode);
+
+		
 	}
 }
