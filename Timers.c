@@ -15,7 +15,7 @@ void Timer_Init(void) {
 	__TIM2_CLK_ENABLE();
 	timer_Instance.Init.Prescaler = clockFreq / 5000;
 	timer_Instance.Init.CounterMode = TIM_COUNTERMODE_UP;
-	timer_Instance.Init.Period = 10000;
+	timer_Instance.Init.Period = 50000;
 	timer_Instance.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer_Instance.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance);

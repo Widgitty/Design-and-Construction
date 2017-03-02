@@ -25,7 +25,7 @@
 #define Delay osDelay
 #define resistance 10000;
  
-static TIM_HandleTypeDef timer_Instance = { .Instance = TIM2}; 
+static TIM_HandleTypeDef timer_Instance = { .Instance = TIM2};
 
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
@@ -84,23 +84,19 @@ void Thread_System (void const *argument) {
 		
 		switch (btns) {
 			case 0x0100:
-				unit[0] = 'A';
 				mode = 0;
 			break;
 			case 0x0200:
-				unit[0] = 'V';
 				mode = 1;
 			break;
 			case 0x0400:
-				unit[0] = (char)0xDE;
 				mode = 2;
 			break;
 			case 0x0800:
-				unit[0] = 'F';
 				mode = 3;
 			break;
 			default:
-				//blah
+				//nada
 			break;
 		}
 		
@@ -114,7 +110,11 @@ void Thread_System (void const *argument) {
 			case 2:
 				unit[0] = (char)0xDE;
 			break;
+			case 3:
+				unit[0] = 'F';
+			break;
 			default:
+				unit[0] = '/';
 				sprintf(string, "Undefined mode!");
 				LCD_Write_At(string, 0, 0, 0);
 				Delay(1000);
@@ -126,28 +126,6 @@ void Thread_System (void const *argument) {
 		value = (value *16);
 		
 		value_calk = adcConv(mode, value, &range);
-
-		/*
-		// Switch range based on limits
-		if ((value_calk > InnerLowerLimit) & (value_calk < InnerUpperLimit)){
-			if (range < maxRange) {
-				range++;
-			}
-			else {
-				// TODO: Print error to LCD
-			}
-		}
-		else if ((value_calk > OuterUpperLimit) | (value_calk < OuterLowerLimit)) {
-			if (range > minRange) {
-				range--;
-			}
-			else {
-				// TODO: Print error to LCD
-			}
-		}
-		*/
-		
-		
 		
 		// Set output based on range
 		switch (range) {
@@ -161,19 +139,6 @@ void Thread_System (void const *argument) {
 				GPIO_Off(0); // Disconnect all inputs if possible
 			break;
 		}
-
-		// Put to LCD
-		/*
-		//LCD_Clear();
-		LCD_GotoXY(0,0);
-		sprintf(string, "                ");
-		sprintf(string, "%1.9lf", value_calk);
-		LCD_PutS(string);
-		LCD_GotoXY(15,0);
-		LCD_PutS(unit);
-		Delay(100);
-		*/
-		
 
 		sprintf(string, "%1.9lf", value_calk);
 		LCD_Write_At(string, 0, 0, 0);
