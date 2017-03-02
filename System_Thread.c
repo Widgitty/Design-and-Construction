@@ -25,7 +25,7 @@
 #define Delay osDelay
 #define resistance 10000;
  
-static TIM_HandleTypeDef timer_Instance = { .Instance = TIM2};
+static TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
 
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
@@ -84,16 +84,25 @@ void Thread_System (void const *argument) {
 		
 		switch (btns) {
 			case 0x0100:
+				LED_Out(1);
 				mode = 0;
 			break;
 			case 0x0200:
+				LED_Out(2);
 				mode = 1;
 			break;
 			case 0x0400:
+				LED_Out(4);
 				mode = 2;
 			break;
 			case 0x0800:
+				LED_Out(8);
 				mode = 3;
+			break;
+			
+			// this is a reset button for the capacitor
+			case 0x8000:
+				capacitorState = 0;
 			break;
 			default:
 				//nada
