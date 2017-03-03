@@ -34,6 +34,69 @@ int Init_Thread_System (void) {
 }
 
 
+
+void Calibrate() {
+	int cursor = 0;
+	int pos = 0;
+	double number = 1.234;
+	char string[17];
+	
+	uint32_t btns = 0;
+	LCD_Write_At("", 0, 0, 1);
+	
+	while ((btns = SWT_Debounce()) != 0x8000) {
+
+		
+		switch (btns) {
+			case 0x0100:
+				if (cursor > 0) {
+					cursor --;
+					pos --;
+					if (cursor == 1)
+						cursor --;
+				}
+			break;
+			case 0x0200:
+				if (cursor < 4) {
+					cursor ++;
+					pos ++;
+					if (cursor == 1)
+						cursor ++;
+				}
+			break;
+			case 0x0400:
+				number -= pow(10, (-pos));
+			break;
+			case 0x0800:
+				number += pow(10, (-pos));
+			break;
+			default:
+				//blah
+			break;
+		}
+		
+		sprintf(string, "%1.3lf", number);
+		LCD_Write_At(string, 0, 0, 0);
+		LCD_Write_At("     ", 0, 1, 0);
+		LCD_Write_At("^", cursor, 1, 0); // TODO: Replace with proper cursor
+		Delay(100);
+	}
+	
+	// Measure value
+	
+	// Calculate error
+	
+	// Correct
+	
+	sprintf(string, "Calibrated at:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", number);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	LCD_Write_At("", 0, 0, 1);
+}
+
+
 void Thread_System (void const *argument) {
 	
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
@@ -62,16 +125,16 @@ void Thread_System (void const *argument) {
 		
 		switch (btns) {
 			case 0x0100:
-				unit[0] = 'A';
 				mode = 0;
 			break;
 			case 0x0200:
-				unit[0] = 'V';
 				mode = 1;
 			break;
 			case 0x0400:
-				unit[0] = (char)0xDE;
 				mode = 2;
+			break;
+			case 0x8000:
+				Calibrate();
 			break;
 			default:
 				//blah
