@@ -35,7 +35,7 @@ int Init_Thread_System (void) {
 
 
 
-void Calibrate() {
+void Calibrate(int mode, int range) {
 	int cursor = 0;
 	int pos = 0;
 	double number = 1.234;
@@ -83,14 +83,26 @@ void Calibrate() {
 	}
 	
 	// Measure value
+	uint32_t value = 0;
+	double value_calk = 0;
+	value = read_ADC1();
+	value = (value *16);
+	value_calk = adcConv(mode, value, &range);
 	
 	// Calculate error
+	double error = number - value_calk;
 	
 	// Correct
 	
 	sprintf(string, "Calibrated at:");
 	LCD_Write_At(string, 0, 0, 1);
 	sprintf(string, "%1.3lf", number);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	LCD_Write_At("", 0, 0, 1);
+	sprintf(string, "Adjusted:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", error);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	LCD_Write_At("", 0, 0, 1);
@@ -134,7 +146,7 @@ void Thread_System (void const *argument) {
 				mode = 2;
 			break;
 			case 0x8000:
-				Calibrate();
+				Calibrate(mode, range);
 			break;
 			default:
 				//blah
