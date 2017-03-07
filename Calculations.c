@@ -10,8 +10,14 @@
 // Define function prototypes
 double switchRange(int value, int *rangep, double scale);
 double adcConv(int mode, double value, int *rangep);
+double movAvg(double output, int mode);
 
+// Define class variables
+	double avgOut;
+	int deltaMode = 0;
+	double avgDiff;
 
+// Define function definitions
 
 double adcConv(int mode, double value, int *rangep){
 
@@ -36,8 +42,14 @@ double adcConv(int mode, double value, int *rangep){
 		*rangep = 0;
 		LED_Out(4);
 		output = ((double)value / (pow(2.0, 16.0)) * 3.3) / inputCurrent;		
+		if (output >= 1000 && output){
+			*rangep = 1;
+			output/=1000;
+		}
+		else *rangep = 0;
 	} 	
-
+	
+	
 	return output;		
 	
 }
@@ -48,7 +60,7 @@ double switchRange(int value, int *rangep, double scale){
 	int minRange = 0;
 	double output;
 	
-	output = (((double)value / (pow(2.0, 16.0)) * 3.3)-1.5) * scale;	
+	output = (((double)value / (pow(2.0, 16.0)) * 3.0)-1.5) * scale;	
 	
 	
 	
@@ -76,5 +88,31 @@ double switchRange(int value, int *rangep, double scale){
 	
 	return output;
 }
+
+
+double movAvg(double avGin, int mode){
+	double aCoeff = 0.9;
+	double bCoeff = 0.1;
+	avgDiff = avgOut - avGin;
+	
+	 if (mode != deltaMode){
+			deltaMode = mode;
+		avgOut = 0;
+	 }
+	 
+	 if (mode == deltaMode){
+		avgOut = (aCoeff*avgOut + bCoeff*avGin);
+	 }
+	 
+
+		
+
+	return avgOut;
+	
+};
+
+
+	
+	
 
 

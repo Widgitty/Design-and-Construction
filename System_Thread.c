@@ -100,28 +100,8 @@ void Thread_System (void const *argument) {
 		value = (value *16);
 		
 		value_calk = adcConv(mode, value, &range);
-
-		/*
-		// Switch range based on limits
-		if ((value_calk > InnerLowerLimit) & (value_calk < InnerUpperLimit)){
-			if (range < maxRange) {
-				range++;
-			}
-			else {
-				// TODO: Print error to LCD
-			}
-		}
-		else if ((value_calk > OuterUpperLimit) | (value_calk < OuterLowerLimit)) {
-			if (range > minRange) {
-				range--;
-			}
-			else {
-				// TODO: Print error to LCD
-			}
-		}
-		*/
-		
-		
+		value_calk = movAvg(value_calk, mode);
+	
 		
 		// Set output based on range
 		switch (range) {
@@ -153,10 +133,16 @@ void Thread_System (void const *argument) {
 		LCD_Write_At(string, 0, 0, 0);
 		LCD_Write_At(unit, 15, 0, 0);
 		
-		if (range == 1) {
+		if (range == 1 && mode != 2) {
 			LCD_Write_At("m", 14, 0, 0);
 			sprintf(string, "%s m%s\r\n", string, unit);
-		} else {
+		}
+		
+		if (range == 1 && mode == 2) {
+			LCD_Write_At("K", 14, 0, 0);
+			sprintf(string, "%s m%s\r\n", string, unit);
+		}
+	  else {
 			LCD_Write_At(" ", 14, 0, 0);
 			sprintf(string, "%s %s\r\n", string, unit);
 		}
