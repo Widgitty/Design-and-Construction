@@ -59,7 +59,17 @@ void SWT_Init (void) {
                        (2UL << 2*13) |
                        (2UL << 2*14) |
                        (2UL << 2*15)  );   /* PE.8..15 set pull down             */
-											 
+				
+	SYSCFG->EXTICR[3] |= SYSCFG_EXTICR3_EXTI8; 			
+	EXTI->RTSR |= 1UL << 8;
+	EXTI->IMR |= 1UL << 8;
+	NVIC_EnableIRQ(EXTI9_5_IRQn);
+	NVIC_EnableIRQ(EXTI15_10_IRQn);
+}
+
+void EXTI9_5_IRQHandler(void){
+	
+	EXTI->PR |= 1 << 8;
 }
 
 /*----------------------------------------------------------------------------

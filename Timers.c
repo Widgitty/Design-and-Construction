@@ -42,7 +42,7 @@ void Interrupt_Init(){
   GPIOB->PUPDR    &= ~((3UL << 2* 4));
 	GPIOB->PUPDR    |= 	((2UL << 2* 4));
 	
-	SYSCFG->EXTICR[1] = SYSCFG_EXTICR2_EXTI4_PB;
+	SYSCFG->EXTICR[1] |= SYSCFG_EXTICR2_EXTI4_PB;
 	EXTI->RTSR |= 1UL << 4;
 	EXTI->IMR |= 1UL << 4;
 	NVIC_EnableIRQ(EXTI4_IRQn);
