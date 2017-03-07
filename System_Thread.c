@@ -98,10 +98,6 @@ void Thread_System (void const *argument) {
 			case 0x0800:
 				LED_Out(8);
 				mode = 3;
-			break;
-			
-			// this is a reset button for the capacitor
-			case 0x8000:
 				capacitorState = 0;
 			break;
 			default:

@@ -17,7 +17,7 @@
 #include "SWT.h"
 
 const unsigned long SWT_mask[] = {1UL << 8, 1UL << 9, 1UL << 10, 1UL << 11, 1UL << 12, 1UL << 13, 1UL << 14, 1UL << 15};
-
+void init_swt_interrupt(void);
 	uint32_t prev = 0;
 
 /*----------------------------------------------------------------------------
@@ -79,6 +79,9 @@ uint32_t SWT_Debounce() {
 	out = (btns ^ prev) & btns;
 	prev = btns;
 	return out;
+}
+
+void init_swt_interrupt(void){
 }
 
 /*----------------------------------------------------------------------------
