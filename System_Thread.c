@@ -20,6 +20,11 @@
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
  
+
+ 
+ 
+ 
+ 
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
 // Thread priority set to high, as system thread should not be blockable
@@ -35,11 +40,56 @@ int Init_Thread_System (void) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+// Calibration structures
+typedef struct {
+	double lowerPoint;
+	double upperPoint;
+	double zeroOffset;
+	double multiplier;
+} calibRangeTpeDef;
+
+typedef struct {
+	calibRangeTpeDef voltage;
+	calibRangeTpeDef current;
+	calibRangeTpeDef resistance;
+} calibStructTypeDef;
+
+
+calibStructTypeDef calibStruct;
+static const calibStructTypeDef calibStructFlash;
+uint8_t *calibStructFlashp = (uint8_t*)&calibStructFlash;
+
+
+
+calibStructTypeDef calibStruct;
+
+static const double numberFlash;
+
+uint32_t *numberFlashp = (uint32_t*)&numberFlash;
+
+
+
+
+
 void Calibrate(int mode, int range) {
+	
 	int cursor = 0;
 	int pos = 0;
-	double number = 1.234;
 	char string[17];
+	
+	calibStruct = calibStructFlash;
+	double number = numberFlash;
+
 	
 	uint32_t btns = 0;
 	LCD_Write_At("", 0, 0, 1);
@@ -106,7 +156,30 @@ void Calibrate(int mode, int range) {
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	LCD_Write_At("", 0, 0, 1);
+	
+	// write number at numberFlashp
+	sprintf(string, "addr:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%d", (uint32_t)numberFlashp);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	LCD_Write_At("", 0, 0, 1);
+	
+	
+	//HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t)numberFlashp, (uint64_t)number);
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void Thread_System (void const *argument) {
