@@ -16,7 +16,6 @@ reads ADC channel and displays upper 8 bits (of 12) on LEDs*/
 /* Function to intiialise ADC1    */
 
 void ADC1_Init(void) {
-	
 	RCC->APB2ENR  |= ((1UL <<  8) );         /* Enable ADC1 clock                */
 	RCC->AHB1ENR  |= ((1UL <<  2) );         /* Enable GPIOC clock                */
 	GPIOC->MODER = 0xffffffff;
@@ -32,7 +31,6 @@ void ADC1_Init(void) {
 	ADC1->SQR1 = 0x01;
 	ADC1->SQR3 = 0x0e;								/* ADC_IN14 = 0x0e: ADC_IN15 = 0x0f */
 	ADC1->CR2 |= (1UL << 0);
-	
 }
 	
 /* function to read ADC and retun value */
