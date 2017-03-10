@@ -165,17 +165,32 @@ void SerialInit() {
 
 // Blocking send for now, could be better implemented in the future
 void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
+	HAL_StatusTypeDef Ret;
 	
 	// If in WiFI mode, send the data AT command
 	if (WiFiEnabled == 1) {
 		char string[17];
 		sprintf(string, "AT+CIPSEND=0,%d\r\n", Size);
 		SendString(string);
+		doneFlag = 0;
+		Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
+		while (doneFlag == 0) {
+			Delay(100);
+		}
+		sprintf(string, "AT+CIPSEND=1,%d\r\n", Size);
+		SendString(string);
+		doneFlag = 0;
+		Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
+		while (doneFlag == 0) {
+			Delay(100);
+		}
 	}
-	doneFlag = 0;
-	HAL_StatusTypeDef Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
-	while (doneFlag == 0) {
-		Delay(100);
+	else {
+		doneFlag = 0;
+		Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
+		while (doneFlag == 0) {
+			Delay(100);
+		}
 	}
 	
 }
