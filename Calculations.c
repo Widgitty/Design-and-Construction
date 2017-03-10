@@ -45,9 +45,7 @@ double adcConv(int mode, double value, int *rangep){
 	if (mode == 3){
 		output = capCalc();
 	}
-
 	return output;		
-	
 }
 
 double switchRange(int value, int *rangep, double scale){

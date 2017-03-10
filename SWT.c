@@ -15,18 +15,21 @@
 
 #include "STM32F4xx.h"
 #include "SWT.h"
+#include "LED.h"
 
 const unsigned long SWT_mask[] = {1UL << 8, 1UL << 9, 1UL << 10, 1UL << 11, 1UL << 12, 1UL << 13, 1UL << 14, 1UL << 15};
 void init_swt_interrupt(void);
+void set_Mode(uint32_t buttons);
 	uint32_t prev = 0;
+	uint32_t temp_mode = 0;
 
 /*----------------------------------------------------------------------------
   initialize SWT Pins
  *----------------------------------------------------------------------------*/
 void SWT_Init (void) {
-
-  RCC->AHB1ENR    |=  ((1UL <<  4)    );   /* Enable GPIOE clock              */
-
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+	RCC->AHB1ENR    |=  RCC_AHB1ENR_GPIOEEN;
+	
   GPIOE->MODER    &= ~((3UL << 2* 8) |
                        (3UL << 2* 9) |
                        (3UL << 2*10) |
@@ -59,17 +62,56 @@ void SWT_Init (void) {
                        (2UL << 2*13) |
                        (2UL << 2*14) |
                        (2UL << 2*15)  );   /* PE.8..15 set pull down             */
-				
-	SYSCFG->EXTICR[3] |= SYSCFG_EXTICR3_EXTI8; 			
-	EXTI->RTSR |= 1UL << 8;
-	EXTI->IMR |= 1UL << 8;
+	
+	
+	//port e listener for ports 8-15
+	SYSCFG->EXTICR[2] |= 0x4444;
+	SYSCFG->EXTICR[3] |= 0x4444;
+	
+	//sets bits 8-15 high for interrupts on each button
+	EXTI->RTSR |= 0xFF << 8;
+	EXTI->IMR |= 0xFF << 8;
+	
+	// enable IRG functions for interrupts
 	NVIC_EnableIRQ(EXTI9_5_IRQn);
 	NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
+void EXTI15_10_IRQHandler(void){
+	uint32_t btns = GPIOE->IDR;
+	EXTI->PR |= btns;
+	set_Mode(btns);
+}
+
 void EXTI9_5_IRQHandler(void){
 	
-	EXTI->PR |= 1 << 8;
+	EXTI->PR |= GPIOE->IDR;
+	set_Mode(GPIOE->IDR);
+	
+}
+
+int get_Mode(void){
+	return temp_mode;
+}
+
+void set_Mode(uint32_t buttons){
+	switch(buttons){
+		case 0x0100:
+				temp_mode = 0;
+			break;
+			case 0x0200:
+				temp_mode = 1;
+			break;
+			case 0x0400:
+				temp_mode = 2;
+			break;
+			case 0x0800:
+				temp_mode = 3;
+			break;
+			default:
+				//nada
+			break;
+	}
 }
 
 /*----------------------------------------------------------------------------

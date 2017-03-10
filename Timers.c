@@ -46,6 +46,7 @@ void Interrupt_Init(){
 	EXTI->RTSR |= 1UL << 4;
 	EXTI->IMR |= 1UL << 4;
 	NVIC_EnableIRQ(EXTI4_IRQn);
+	
 	TIM2->DIER |= TIM_DIER_UIE;
 	NVIC_EnableIRQ(TIM2_IRQn);
 }

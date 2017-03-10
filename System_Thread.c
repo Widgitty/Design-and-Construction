@@ -40,6 +40,10 @@ int Init_Thread_System (void) {
   return(0);
 }
 
+void set_Mode(uint32_t buttons){
+	
+}
+
 
 
 
@@ -76,47 +80,28 @@ void Thread_System (void const *argument) {
 
 
 	while (1) {
-		uint32_t btns = 0;
+		//uint32_t btns = 0;
 		Delay(10);
 		
-		// Read mode
-		btns = SWT_Debounce();
-		
-		switch (btns) {
-			case 0x0100:
-				LED_Out(1);
-				mode = 0;
-			break;
-			case 0x0200:
-				LED_Out(2);
-				mode = 1;
-			break;
-			case 0x0400:
-				LED_Out(4);
-				mode = 2;
-			break;
-			case 0x0800:
-				LED_Out(8);
-				mode = 3;
-				capacitorState = 0;
-			break;
-			default:
-				//nada
-			break;
-		}
+		mode = get_Mode();
 		
 		switch (mode) {
 			case 0:
 				unit[0] = 'A';
+				LED_Out(1);
 			break;
 			case 1:
 				unit[0] = 'V';
+				LED_Out(2);
 			break;
 			case 2:
 				unit[0] = (char)0xDE;
+				LED_Out(4);
 			break;
 			case 3:
 				unit[0] = 'F';
+				LED_Out(8);
+				capacitorState = 0;
 			break;
 			default:
 				unit[0] = '/';
