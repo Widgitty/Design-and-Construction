@@ -78,6 +78,51 @@ double *numberFlashp = (double*)&numberFlash;
 
 
 
+
+
+I2C_HandleTypeDef hi2c1;
+void I2Cinit(void)
+{
+	GPIO_InitTypeDef GPIO_InitStruct;
+	__HAL_RCC_I2C3_CLK_ENABLE();
+	__GPIOA_CLK_ENABLE();
+	__GPIOC_CLK_ENABLE();
+	/**I2C1 GPIO Configuration
+	PA8     ------> I2C3_SCL
+	PC9     ------> I2C3_SDA
+	*/
+	GPIO_InitStruct.Pin = GPIO_PIN_8;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+	GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = GPIO_PIN_9;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+	GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+	hi2c1.Instance = I2C3;
+	hi2c1.Init.ClockSpeed = 100000;
+	hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+	hi2c1.Init.OwnAddress1 = 56;
+	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	hi2c1.Init.OwnAddress2 = 0;
+	hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_ENABLE;
+	HAL_I2C_Init(&hi2c1);
+}
+
+
+
+
+
+
+
 void Calibrate(int mode, int range) {
 	
 	int cursor = 0;
@@ -155,6 +200,42 @@ void Calibrate(int mode, int range) {
 	Delay(2000);
 	LCD_Write_At("", 0, 0, 1);
 	
+	
+	uint8_t aTxBuffer[] = {1, 2, 3, 4};
+	int TXBUFFERSIZE = sizeof(aTxBuffer);
+	I2Cinit();
+
+	uint8_t data = 0;
+	
+	
+	// Send control byte (S1010(xxx0) where xxx = block select
+	data = 0xA0;
+	HAL_I2C_Master_Transmit(&hi2c1,(0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
+	// Send address
+	data = 0x00;
+	HAL_I2C_Master_Transmit(&hi2c1,(0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
+	// Receive data
+	data = 0xFF;
+	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
+	
+	
+	// Send control byte (S1010(xxx0) where xxx = block select
+	data = 0xA0;
+	HAL_I2C_Master_Transmit(&hi2c1,(0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
+	// Send address
+	data = 0x00;
+	HAL_I2C_Master_Transmit(&hi2c1,(0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
+	// Receive data
+	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
+	
+	// write number at numberFlashp
+	sprintf(string, "I2C:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%d", data);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	LCD_Write_At("", 0, 0, 1);
+	
 	// write number at numberFlashp
 	sprintf(string, "Written to:");
 	LCD_Write_At(string, 0, 0, 1);
@@ -174,6 +255,7 @@ void Calibrate(int mode, int range) {
 	*/
 	
 	//*numberFlashp = number;
+	/*
 	HAL_StatusTypeDef ret;
 	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR );
 	HAL_FLASH_Unlock();
@@ -239,9 +321,8 @@ void Calibrate(int mode, int range) {
 			LCD_Write_At("", 0, 0, 1);
 		}
 		
-		
-		
 	}
+	*/
 	
 }
 
