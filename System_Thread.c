@@ -71,11 +71,8 @@ uint8_t *calibStructFlashp = (uint8_t*)&calibStructFlash;
 
 
 
-calibStructTypeDef calibStruct;
-
-static const double numberFlash;
-
-uint32_t *numberFlashp = (uint32_t*)&numberFlash;
+static const double numberFlash = 2.5;
+double *numberFlashp = (double*)&numberFlash;
 
 
 
@@ -88,8 +85,9 @@ void Calibrate(int mode, int range) {
 	char string[17];
 	
 	calibStruct = calibStructFlash;
-	double number = numberFlash;
-
+	__HAL_FLASH_DATA_CACHE_DISABLE();
+	double number = *numberFlashp;
+	__HAL_FLASH_DATA_CACHE_ENABLE();
 	
 	uint32_t btns = 0;
 	LCD_Write_At("", 0, 0, 1);
@@ -158,15 +156,93 @@ void Calibrate(int mode, int range) {
 	LCD_Write_At("", 0, 0, 1);
 	
 	// write number at numberFlashp
-	sprintf(string, "addr:");
+	sprintf(string, "Written to:");
 	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%d", (uint32_t)numberFlashp);
+	sprintf(string, "0x%x", (uint32_t)numberFlashp);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	LCD_Write_At("", 0, 0, 1);
 	
+		// write number at numberFlashp
+		/*
+	sprintf(string, "Length:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%d", sizeof(number));
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	LCD_Write_At("", 0, 0, 1);
+	*/
 	
-	//HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t)numberFlashp, (uint64_t)number);
+	//*numberFlashp = number;
+	HAL_StatusTypeDef ret;
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR );
+	HAL_FLASH_Unlock();
+	ret = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t)numberFlashp, (uint64_t)number);
+	HAL_FLASH_Lock();
+	if (ret != 0) {
+		// print error
+		sprintf(string, "Write error:");
+		LCD_Write_At(string, 0, 0, 1);
+		sprintf(string, "%d", ret);
+		LCD_Write_At(string, 0, 1, 0);
+		Delay(2000);
+		LCD_Write_At("", 0, 0, 1);
+		
+		uint32_t error = HAL_FLASH_GetError();
+		
+		if(((error >> 0) & 1UL) == 1UL) {
+			sprintf(string, "Write error:");
+			LCD_Write_At(string, 0, 0, 1);
+			sprintf(string, "RDERR");
+			LCD_Write_At(string, 0, 1, 0);
+			Delay(2000);
+			LCD_Write_At("", 0, 0, 1);
+		}
+		if(((error >> 1) & 1UL) == 1UL) {
+			sprintf(string, "Write error:");
+			LCD_Write_At(string, 0, 0, 1);
+			sprintf(string, "PGSERR");
+			LCD_Write_At(string, 0, 1, 0);
+			Delay(2000);
+			LCD_Write_At("", 0, 0, 1);
+		}
+		if(((error >> 2) & 1UL) == 1UL) {
+			sprintf(string, "Write error:");
+			LCD_Write_At(string, 0, 0, 1);
+			sprintf(string, "PGPERR");
+			LCD_Write_At(string, 0, 1, 0);
+			Delay(2000);
+			LCD_Write_At("", 0, 0, 1);
+		}
+		if(((error >> 3) & 1UL) == 1UL) {
+			sprintf(string, "Write error:");
+			LCD_Write_At(string, 0, 0, 1);
+			sprintf(string, "PGAERR");
+			LCD_Write_At(string, 0, 1, 0);
+			Delay(2000);
+			LCD_Write_At("", 0, 0, 1);
+		}
+		if(((error >> 4) & 1UL) == 1UL) {
+			sprintf(string, "Write error:");
+			LCD_Write_At(string, 0, 0, 1);
+			sprintf(string, "WRPERR");
+			LCD_Write_At(string, 0, 1, 0);
+			Delay(2000);
+			LCD_Write_At("", 0, 0, 1);
+		}
+		if(((error >> 5) & 1UL) == 1UL) {
+			sprintf(string, "Write error:");
+			LCD_Write_At(string, 0, 0, 1);
+			sprintf(string, "OPERR");
+			LCD_Write_At(string, 0, 1, 0);
+			Delay(2000);
+			LCD_Write_At("", 0, 0, 1);
+		}
+		
+		
+		
+	}
+	
 }
 
 
