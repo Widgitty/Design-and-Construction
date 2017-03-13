@@ -125,6 +125,7 @@ void I2Cinit(void)
 
 void Calibrate(int mode, int range) {
 	
+	uint8_t zero = 0x00;
 	int cursor = 0;
 	int pos = 0;
 	char string[17];
@@ -138,9 +139,13 @@ void Calibrate(int mode, int range) {
 	LCD_Write_At("", 0, 0, 1);
 	
 	I2Cinit();
-	uint8_t data[8];
-	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<1UL, (uint8_t*)&data, 8, 5000);
+	uint8_t data[9];
+	// Set address
+	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &zero, 1, 5000);
+	// Receive data
+	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<0UL, (uint8_t*)&data, 8, 5000);
 	number = *((double*) &data);
+	number = 1.0;
 	
 	while ((btns = SWT_Debounce()) != 0x8000) {
 
@@ -167,6 +172,9 @@ void Calibrate(int mode, int range) {
 			break;
 			case 0x0800:
 				number += pow(10, (-pos));
+			break;
+			case 0x1000:
+				number = (double) 0.0;
 			break;
 			default:
 				//blah
@@ -231,7 +239,15 @@ void Calibrate(int mode, int range) {
 	*/
 	
 	//number = *((double*) &data);
-	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<1UL, (uint8_t*)&number, 8, 5000);
+	uint8_t *numpointer = (uint8_t*) &number;
+	int i;
+	for (i = 0; i<8; i++) {
+		data[i+1] = 0xFF & *(numpointer + (8*i));
+	}
+	data[0] = 0x00;
+	
+	// Set address and data
+	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, data, 9, 5000);
 	
 	
 	// write number at numberFlashp
