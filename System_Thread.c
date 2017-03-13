@@ -92,14 +92,14 @@ void I2Cinit(void)
 	PC9     ------> I2C3_SDA
 	*/
 	GPIO_InitStruct.Pin = GPIO_PIN_8;
-	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
 	GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 	GPIO_InitStruct.Pin = GPIO_PIN_9;
-	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
 	GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
@@ -136,6 +136,11 @@ void Calibrate(int mode, int range) {
 	
 	uint32_t btns = 0;
 	LCD_Write_At("", 0, 0, 1);
+	
+	I2Cinit();
+	uint8_t data[8];
+	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<1UL, (uint8_t*)&data, 8, 5000);
+	number = *((double*) &data);
 	
 	while ((btns = SWT_Debounce()) != 0x8000) {
 
@@ -201,13 +206,9 @@ void Calibrate(int mode, int range) {
 	LCD_Write_At("", 0, 0, 1);
 	
 	
-	uint8_t aTxBuffer[] = {1, 2, 3, 4};
-	int TXBUFFERSIZE = sizeof(aTxBuffer);
-	I2Cinit();
 
-	uint8_t data = 0;
 	
-	
+	/*
 	// Send control byte (S1010(xxx0) where xxx = block select
 	data = 0xA0;
 	HAL_I2C_Master_Transmit(&hi2c1,(0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
@@ -227,11 +228,16 @@ void Calibrate(int mode, int range) {
 	HAL_I2C_Master_Transmit(&hi2c1,(0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
 	// Receive data
 	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
+	*/
+	
+	//number = *((double*) &data);
+	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<1UL, (uint8_t*)&number, 8, 5000);
+	
 	
 	// write number at numberFlashp
 	sprintf(string, "I2C:");
 	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%d", data);
+	sprintf(string, "%1.4lf", number);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	LCD_Write_At("", 0, 0, 1);
@@ -343,8 +349,8 @@ void Thread_System (void const *argument) {
 	
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 	
-	SerialInit();
-	SerialReceiveStart();
+	//SerialInit();
+	//SerialReceiveStart();
 		
 	uint32_t value = 0;
 	double value_calk = 0;
@@ -466,11 +472,11 @@ void Thread_System (void const *argument) {
 			sprintf(string, "%s %s\r\n", string, unit);
 		}
 
-		SerialSend((uint8_t*)string, strlen(string), 1000);
+		//SerialSend((uint8_t*)string, strlen(string), 1000);
 		
-		SerialReceive();
+		//SerialReceive();
 		
-		SerialCheckMode(&mode);
+		//SerialCheckMode(&mode);
 
 		
 	}
