@@ -31,13 +31,16 @@ void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
 // Thread priority set to high, as system thread should not be blockable
 osThreadDef(Thread_System, osPriorityHigh, 1, 0);        // thread object
+uint32_t buttonUpdate = 0;
 
 int Init_Thread_System (void) {
-
   tid_Thread_System = osThreadCreate(osThread(Thread_System), NULL);
   if (!tid_Thread_System) return(-1);
-  
   return(0);
+}
+
+void Set_Button_Update(void){
+	buttonUpdate = 1;
 }
 
 void Thread_System (void const *argument) {
@@ -64,35 +67,39 @@ void Thread_System (void const *argument) {
 
 
 	while (1) {
-		//uint32_t btns = 0;
 		Delay(10);
 		
-		mode = getMode();
+		mode = Get_Mode();
 		
-		switch (mode) {
-			case 0:
-				unit[0] = 'A';
-				LED_Out(1);
-			break;
-			case 1:
-				unit[0] = 'V';
-				LED_Out(2);
-			break;
-			case 2:
-				unit[0] = (char)0xDE;
-				LED_Out(4);
-			break;
-			case 3:
-				unit[0] = 'F';
-				LED_Out(8);
-				capacitorState = 0;
-			break;
-			default:
-				unit[0] = '/';
-				sprintf(string, "Undefined mode!");
-				LCD_Write_At(string, 0, 0, 0);
-				Delay(1000);
-			break;
+		// this code is only executed if a button update happened (a button was pressed)
+		
+		if(buttonUpdate == 1){
+			buttonUpdate = 0;
+			switch (mode) {
+				case 0:
+					unit[0] = 'A';
+					LED_Out(1);
+				break;
+				case 1:
+					unit[0] = 'V';
+					LED_Out(2);
+				break;
+				case 2:
+					unit[0] = (char)0xDE;
+					LED_Out(4);
+				break;
+				case 3:
+					unit[0] = 'F';
+					LED_Out(8);
+					capacitorState = 0;
+				break;
+				default:
+					unit[0] = '/';
+					sprintf(string, "Undefined mode!");
+					LCD_Write_At(string, 0, 0, 0);
+					Delay(1000);
+				break;
+			}
 		}
 		
 		// Read ADC

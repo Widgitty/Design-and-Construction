@@ -17,12 +17,12 @@
 #include "SWT.h"
 #include "LED.h"
 #include "LCD.h"
+#include "System_Thread.h"
 
 const unsigned long SWT_mask[] = {1UL << 8, 1UL << 9, 1UL << 10, 1UL << 11, 1UL << 12, 1UL << 13, 1UL << 14, 1UL << 15};
 void init_swt_interrupt(void);
-void set_Mode(uint32_t buttons);
-void calcTempMode(void);
-uint32_t getMode(void);
+void Calc_Temp_Mode(void);
+uint32_t Get_Mode(void);
 	uint32_t prev = 0;
 	uint32_t temp_mode = 0;
 	uint32_t GPIOE_value;
@@ -81,23 +81,35 @@ void SWT_Init (void) {
 	NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
+// interrupt functions 
 void EXTI15_10_IRQHandler(void){
 	
-	//just need top 8 bits
-	GPIOE_value = GPIOE->IDR >> 8;
-	calcTempMode();
+	if(GPIOE->IDR != 0x0000000C){
+		//just need top 8 bits
+		GPIOE_value = GPIOE->IDR >> 8;
+		Calc_Temp_Mode();
+		// sets a value that the buttons just got updated
+		Set_Button_Update();
+	}
+	
+	
 	EXTI->PR |= 1;
 }
 
 void EXTI9_5_IRQHandler(void){
 	
-	GPIOE_value = GPIOE->IDR >> 8;
-	calcTempMode();
-	LED_On(6);
+	if(GPIOE->IDR != 0x0000000C){
+		//just need top 8 bits
+		GPIOE_value = GPIOE->IDR >> 8;
+		Calc_Temp_Mode();
+		// sets a value that the buttons just got updated
+		Set_Button_Update();
+	}
+	
 	EXTI->PR |= 1;
 }
 //calculates a temporary mode that then gets called each time from the System_Thread.
-void calcTempMode(void){
+void Calc_Temp_Mode(void){
 	
 	switch(GPIOE_value){
 		case 1:
@@ -118,7 +130,8 @@ void calcTempMode(void){
 	}
 }
 
-uint32_t getMode(void){
+// function returns the temporary mode 
+uint32_t Get_Mode(void){
 	return temp_mode;
 }
 
