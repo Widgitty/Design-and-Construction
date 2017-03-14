@@ -5,14 +5,12 @@
 #include "STM32F4xx_hal.h"
 #include "LED.h"
 #include "SWT.h"
-#include "LCD.h"
 #include "RTE_Components.h"
 #include "ADC.h"
 #include "math.h"
 #include "System_Init.h"
 #include "System_Thread.h"
 #include "GPIO.h"
-#include "LCD_Thread.h"
 #include "stm32f4xx_hal_tim.h"
 #include "Timers.h"
 #include "cmsis_os.h"
@@ -20,6 +18,7 @@
 #include "Calculations.h"
 #include "Serial.h"
 #include "String.h"
+#include "lcd_driver.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -49,8 +48,6 @@ void Thread_System (void const *argument) {
 	char string[17];
 	SerialInit();
 	SerialReceiveStart();
-		
-	
 	
 	uint32_t value = 0;
 	double value_calk = 0;
@@ -63,7 +60,6 @@ void Thread_System (void const *argument) {
 	
 	
 	GPIOD->ODR = 0;
-	LCD_Write_At(NULL, 0, 0, 1);
 
 
 	while (1) {
@@ -79,24 +75,28 @@ void Thread_System (void const *argument) {
 				case 0:
 					unit[0] = 'A';
 					LED_Out(1);
+					lcd_write_string("              ", 0,0);
 				break;
 				case 1:
 					unit[0] = 'V';
 					LED_Out(2);
+					lcd_write_string("              ", 0,0);
 				break;
 				case 2:
 					unit[0] = (char)0xDE;
 					LED_Out(4);
+					lcd_write_string("              ", 0,0);
 				break;
 				case 3:
 					unit[0] = 'F';
 					LED_Out(8);
 					capacitorState = 0;
+					lcd_write_string("              ", 0,0);
 				break;
 				default:
 					unit[0] = '/';
 					sprintf(string, "Undefined mode!");
-					LCD_Write_At(string, 0, 0, 0);
+					lcd_write_string(string, 0,0);
 					Delay(1000);
 				break;
 			}
@@ -122,14 +122,14 @@ void Thread_System (void const *argument) {
 		}
 
 		sprintf(string, "%1.9lf", value_calk);
-		LCD_Write_At(string, 0, 0, 0);
-		LCD_Write_At(unit, 15, 0, 0);
+		lcd_write_string(string, 0, 0);
+		lcd_write_string(unit, 0, 15);
 		
 		if (range == 1) {
-			LCD_Write_At("m", 14, 0, 0);
+			lcd_write_string("m", 0, 14);
 			sprintf(string, "%s m%s\r\n", string, unit);
 		} else {
-			LCD_Write_At(" ", 14, 0, 0);
+			lcd_write_string(" ", 0, 14);
 			sprintf(string, "%s %s\r\n", string, unit);
 		}
 

@@ -394,11 +394,6 @@
               <FilePath>.\SWT.c</FilePath>
             </File>
             <File>
-              <FileName>LCD.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\LCD.c</FilePath>
-            </File>
-            <File>
               <FileName>ADC.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\ADC.c</FilePath>
@@ -412,16 +407,6 @@
               <FileName>System_Thread.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\System_Thread.c</FilePath>
-            </File>
-            <File>
-              <FileName>Testing.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Testing.c</FilePath>
-            </File>
-            <File>
-              <FileName>LCD_Thread.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\LCD_Thread.c</FilePath>
             </File>
             <File>
               <FileName>GPIO.c</FileName>
@@ -442,6 +427,16 @@
               <FileName>Timers.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Timers.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd_buffer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd_buffer.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd_driver.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd_driver.c</FilePath>
             </File>
           </Files>
         </Group>
