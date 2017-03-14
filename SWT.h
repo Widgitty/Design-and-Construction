@@ -24,5 +24,6 @@ extern void SWT_Init(void);
 extern uint32_t SWT_Get (void);
 extern int SWT_Check (unsigned int num);
 uint32_t SWT_Debounce(void);
+uint32_t Get_Mode(void);
 
 #endif
