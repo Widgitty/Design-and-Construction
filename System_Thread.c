@@ -40,29 +40,13 @@ int Init_Thread_System (void) {
   return(0);
 }
 
-void set_Mode(uint32_t buttons){
-	
-}
-
-
-
-
-
 void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 	
 	char string[17];
 	SerialInit();
 	SerialReceiveStart();
-	
-	
-	
-	
-	
-	//HAL_TIM_Base_Start(&timer_Instance);
-	
-	// unreachable code below
-	
+		
 	
 	
 	uint32_t value = 0;
@@ -83,7 +67,7 @@ void Thread_System (void const *argument) {
 		//uint32_t btns = 0;
 		Delay(10);
 		
-		mode = get_Mode();
+		mode = getMode();
 		
 		switch (mode) {
 			case 0:

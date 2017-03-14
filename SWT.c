@@ -16,12 +16,16 @@
 #include "STM32F4xx.h"
 #include "SWT.h"
 #include "LED.h"
+#include "LCD.h"
 
 const unsigned long SWT_mask[] = {1UL << 8, 1UL << 9, 1UL << 10, 1UL << 11, 1UL << 12, 1UL << 13, 1UL << 14, 1UL << 15};
 void init_swt_interrupt(void);
 void set_Mode(uint32_t buttons);
+void calcTempMode(void);
+uint32_t getMode(void);
 	uint32_t prev = 0;
 	uint32_t temp_mode = 0;
+	uint32_t GPIOE_value;
 
 /*----------------------------------------------------------------------------
   initialize SWT Pins
@@ -78,40 +82,44 @@ void SWT_Init (void) {
 }
 
 void EXTI15_10_IRQHandler(void){
-	uint32_t btns = GPIOE->IDR;
-	EXTI->PR |= btns;
-	set_Mode(btns);
+	
+	//just need top 8 bits
+	GPIOE_value = GPIOE->IDR >> 8;
+	calcTempMode();
+	EXTI->PR |= 1;
 }
 
 void EXTI9_5_IRQHandler(void){
 	
-	EXTI->PR |= GPIOE->IDR;
-	set_Mode(GPIOE->IDR);
+	GPIOE_value = GPIOE->IDR >> 8;
+	calcTempMode();
+	LED_On(6);
+	EXTI->PR |= 1;
+}
+//calculates a temporary mode that then gets called each time from the System_Thread.
+void calcTempMode(void){
 	
-}
-
-int get_Mode(void){
-	return temp_mode;
-}
-
-void set_Mode(uint32_t buttons){
-	switch(buttons){
-		case 0x0100:
-				temp_mode = 0;
+	switch(GPIOE_value){
+		case 1:
+			temp_mode = 0;
 			break;
-			case 0x0200:
-				temp_mode = 1;
+		case 2:
+			temp_mode = 1;
 			break;
-			case 0x0400:
-				temp_mode = 2;
+		case 4:
+			temp_mode = 2;
 			break;
-			case 0x0800:
-				temp_mode = 3;
+		case 8:
+			temp_mode = 3;
 			break;
-			default:
-				//nada
+		default:
+			// nothing
 			break;
 	}
+}
+
+uint32_t getMode(void){
+	return temp_mode;
 }
 
 /*----------------------------------------------------------------------------
