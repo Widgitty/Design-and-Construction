@@ -443,6 +443,16 @@
               <FileType>1</FileType>
               <FilePath>.\Timers.c</FilePath>
             </File>
+            <File>
+              <FileName>lcd_buffer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd_buffer.c</FilePath>
+            </File>
+            <File>
+              <FileName>lcd_driver.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lcd_driver.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
