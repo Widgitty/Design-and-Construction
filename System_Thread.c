@@ -5,7 +5,6 @@
 #include "STM32F4xx_hal.h"
 #include "LED.h"
 #include "SWT.h"
-#include "LCD.h"
 #include "RTE_Components.h"
 #include "ADC.h"
 #include "math.h"

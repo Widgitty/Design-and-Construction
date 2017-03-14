@@ -3,7 +3,7 @@
 #include "stm32f4xx_hal_dma.h"
 #include "stm32f4xx_hal_uart.h"
 #include "LED.h"
-#include "LCD_Thread.h"
+#include "lcd_driver.h"
 #include "stm32f4xx_hal_rcc.h"
 #include "stm32f4xx_hal_gpio.h"
 #include "String.h"
@@ -39,7 +39,7 @@ void Error(int err) {
 	int i;
 	char string[17];
 	sprintf(string, "ERROR: %d", err);
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	for (i = 0; i<10; i++) {
 		LED_Out(0xFF);
 		Delay(100);
@@ -95,11 +95,11 @@ void SerialReceive() {
 	if (strcmp(rx_Out, "") != 0) {
 		char string[17];
 		sprintf(string, "Serial:");
-		LCD_Write_At(string, 0, 0, 1);
+		lcd_write_string(string, 0, 0);
 		sprintf(string, "%s", rx_Out);
-		LCD_Write_At(string, 0, 1, 0);
+		lcd_write_string(string, 1, 0);
 		Delay(5000);
-		LCD_Write_At("", 0, 0, 1);
+		lcd_write_string("", 0, 0);
 		sprintf(rx_Out ,"");
 	}
 }
@@ -219,7 +219,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 	char string[17];
 	Error(7);
 	sprintf(string, "Serial Fail");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0,0);
 	Delay(5000);	
 }
 

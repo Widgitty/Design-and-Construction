@@ -8,7 +8,6 @@
 #include "math.h"
 #include "LED.h"
 #include "SWT.h"
-#include "LCD.h"
 #include "ADC.h"
 #include "GPIO.h"
 #include "Timers.h"
