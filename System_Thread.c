@@ -142,10 +142,11 @@ void Calibrate(int mode, int range) {
 	uint8_t data[9];
 	// Set address
 	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &zero, 1, 5000);
+	Delay(1);
 	// Receive data
 	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<0UL, (uint8_t*)&data, 8, 5000);
 	number = *((double*) &data);
-	number = 1.0;
+	//number = 1.0;
 	
 	while ((btns = SWT_Debounce()) != 0x8000) {
 
@@ -242,7 +243,8 @@ void Calibrate(int mode, int range) {
 	uint8_t *numpointer = (uint8_t*) &number;
 	int i;
 	for (i = 0; i<8; i++) {
-		data[i+1] = 0xFF & *(numpointer + (8*i));
+		data[i+1] = (numpointer[i]);
+		//data[i+1] = i;
 	}
 	data[0] = 0x00;
 	
