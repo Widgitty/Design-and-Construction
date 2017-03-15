@@ -44,7 +44,10 @@ int Init_Thread_System (void) {
 
 
 
-
+typedef struct {
+	double point1;
+	double point2;
+} testStructTpeDef;
 
 
 
@@ -65,14 +68,8 @@ typedef struct {
 } calibStructTypeDef;
 
 
-calibStructTypeDef calibStruct;
-static const calibStructTypeDef calibStructFlash;
-uint8_t *calibStructFlashp = (uint8_t*)&calibStructFlash;
 
 
-
-static const double numberFlash = 2.5;
-double *numberFlashp = (double*)&numberFlash;
 
 
 
@@ -126,26 +123,59 @@ void I2Cinit(void)
 void Calibrate(int mode, int range) {
 	
 	uint8_t zero = 0x00;
+	uint8_t address = 0x00;
 	int cursor = 0;
 	int pos = 0;
 	char string[17];
+	testStructTpeDef testStruct;
 	
-	calibStruct = calibStructFlash;
-	__HAL_FLASH_DATA_CACHE_DISABLE();
-	double number = *numberFlashp;
-	__HAL_FLASH_DATA_CACHE_ENABLE();
 	
 	uint32_t btns = 0;
 	LCD_Write_At("", 0, 0, 1);
 	
+	// Load stucture
 	I2Cinit();
 	uint8_t data[9];
 	// Set address
-	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &zero, 1, 5000);
+	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &address, 1, 5000);
 	Delay(1);
 	// Receive data
 	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<0UL, (uint8_t*)&data, 8, 5000);
-	number = *((double*) &data);
+	// Convert 'data' array to structure
+	testStruct.point1 = *((double*) &data);
+	Delay(1);
+	// Set address
+	address = 0x08;
+	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &address, 1, 5000);
+	Delay(1);
+	// Receive data
+	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<0UL, (uint8_t*)&data, 8, 5000);
+	// Convert 'data' array to structure
+	testStruct.point2 = *((double*) &data);
+
+	double number;
+	
+	switch (mode) {
+		case 0:
+			number = testStruct.point1;
+			address = 0x00;
+		break;
+		case 1:
+			number = testStruct.point2;
+			address = 0x08;
+		break;
+		case 2:
+			number = 0;
+			address = 0x0F;
+		break;
+		default:
+			sprintf(string, "Undefined mode!");
+			LCD_Write_At(string, 0, 0, 0);
+			Delay(1000);
+		break;
+	}
+	
+	
 	//number = 1.0;
 	
 	while ((btns = SWT_Debounce()) != 0x8000) {
@@ -201,44 +231,8 @@ void Calibrate(int mode, int range) {
 	
 	// Correct
 	
-	sprintf(string, "Calibrated at:");
-	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", number);
-	LCD_Write_At(string, 0, 1, 0);
-	Delay(2000);
-	LCD_Write_At("", 0, 0, 1);
-	sprintf(string, "Adjusted:");
-	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", error);
-	LCD_Write_At(string, 0, 1, 0);
-	Delay(2000);
-	LCD_Write_At("", 0, 0, 1);
-	
-	
-
-	
-	/*
-	// Send control byte (S1010(xxx0) where xxx = block select
-	data = 0xA0;
-	HAL_I2C_Master_Transmit(&hi2c1,(0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
-	// Send address
-	data = 0x00;
-	HAL_I2C_Master_Transmit(&hi2c1,(0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
-	// Receive data
-	data = 0xFF;
-	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
-	
-	
-	// Send control byte (S1010(xxx0) where xxx = block select
-	data = 0xA0;
-	HAL_I2C_Master_Transmit(&hi2c1,(0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
-	// Send address
-	data = 0x00;
-	HAL_I2C_Master_Transmit(&hi2c1,(0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
-	// Receive data
-	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<1UL, (uint8_t*)&data, 1, 5000);
-	*/
-	
+	// Save
+	// Convert structure to 'data' array
 	//number = *((double*) &data);
 	uint8_t *numpointer = (uint8_t*) &number;
 	int i;
@@ -246,108 +240,33 @@ void Calibrate(int mode, int range) {
 		data[i+1] = (numpointer[i]);
 		//data[i+1] = i;
 	}
-	data[0] = 0x00;
+	data[0] = address;
 	
 	// Set address and data
 	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, data, 9, 5000);
 	
 	
-	// write number at numberFlashp
+	// Print info
+	
+	sprintf(string, "Calibrated at:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", number);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+
+	sprintf(string, "Adjusted:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", error);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	
 	sprintf(string, "I2C:");
 	LCD_Write_At(string, 0, 0, 1);
 	sprintf(string, "%1.4lf", number);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	LCD_Write_At("", 0, 0, 1);
-	
-	// write number at numberFlashp
-	sprintf(string, "Written to:");
-	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "0x%x", (uint32_t)numberFlashp);
-	LCD_Write_At(string, 0, 1, 0);
-	Delay(2000);
-	LCD_Write_At("", 0, 0, 1);
-	
-		// write number at numberFlashp
-		/*
-	sprintf(string, "Length:");
-	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%d", sizeof(number));
-	LCD_Write_At(string, 0, 1, 0);
-	Delay(2000);
-	LCD_Write_At("", 0, 0, 1);
-	*/
-	
-	//*numberFlashp = number;
-	/*
-	HAL_StatusTypeDef ret;
-	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR );
-	HAL_FLASH_Unlock();
-	ret = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t)numberFlashp, (uint64_t)number);
-	HAL_FLASH_Lock();
-	if (ret != 0) {
-		// print error
-		sprintf(string, "Write error:");
-		LCD_Write_At(string, 0, 0, 1);
-		sprintf(string, "%d", ret);
-		LCD_Write_At(string, 0, 1, 0);
-		Delay(2000);
-		LCD_Write_At("", 0, 0, 1);
-		
-		uint32_t error = HAL_FLASH_GetError();
-		
-		if(((error >> 0) & 1UL) == 1UL) {
-			sprintf(string, "Write error:");
-			LCD_Write_At(string, 0, 0, 1);
-			sprintf(string, "RDERR");
-			LCD_Write_At(string, 0, 1, 0);
-			Delay(2000);
-			LCD_Write_At("", 0, 0, 1);
-		}
-		if(((error >> 1) & 1UL) == 1UL) {
-			sprintf(string, "Write error:");
-			LCD_Write_At(string, 0, 0, 1);
-			sprintf(string, "PGSERR");
-			LCD_Write_At(string, 0, 1, 0);
-			Delay(2000);
-			LCD_Write_At("", 0, 0, 1);
-		}
-		if(((error >> 2) & 1UL) == 1UL) {
-			sprintf(string, "Write error:");
-			LCD_Write_At(string, 0, 0, 1);
-			sprintf(string, "PGPERR");
-			LCD_Write_At(string, 0, 1, 0);
-			Delay(2000);
-			LCD_Write_At("", 0, 0, 1);
-		}
-		if(((error >> 3) & 1UL) == 1UL) {
-			sprintf(string, "Write error:");
-			LCD_Write_At(string, 0, 0, 1);
-			sprintf(string, "PGAERR");
-			LCD_Write_At(string, 0, 1, 0);
-			Delay(2000);
-			LCD_Write_At("", 0, 0, 1);
-		}
-		if(((error >> 4) & 1UL) == 1UL) {
-			sprintf(string, "Write error:");
-			LCD_Write_At(string, 0, 0, 1);
-			sprintf(string, "WRPERR");
-			LCD_Write_At(string, 0, 1, 0);
-			Delay(2000);
-			LCD_Write_At("", 0, 0, 1);
-		}
-		if(((error >> 5) & 1UL) == 1UL) {
-			sprintf(string, "Write error:");
-			LCD_Write_At(string, 0, 0, 1);
-			sprintf(string, "OPERR");
-			LCD_Write_At(string, 0, 1, 0);
-			Delay(2000);
-			LCD_Write_At("", 0, 0, 1);
-		}
-		
-	}
-	*/
-	
+	HAL_I2C_DeInit(&hi2c1);
 }
 
 
