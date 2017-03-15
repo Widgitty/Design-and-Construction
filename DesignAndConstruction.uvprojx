@@ -440,6 +440,11 @@
               <FileType>1</FileType>
               <FilePath>.\Calculations.c</FilePath>
             </File>
+            <File>
+              <FileName>Calibration.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Calibration.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
