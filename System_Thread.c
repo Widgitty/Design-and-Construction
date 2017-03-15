@@ -20,12 +20,8 @@
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
- 
 
- 
- 
- 
- 
+
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
 // Thread priority set to high, as system thread should not be blockable
@@ -38,36 +34,6 @@ int Init_Thread_System (void) {
   
   return(0);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -109,7 +75,8 @@ void Thread_System (void const *argument) {
 				mode = 2;
 			break;
 			case 0x8000:
-				Calibrate(mode, range);
+				//Calibrate(mode, range);
+				Test_Calibration();
 			break;
 			default:
 				//blah

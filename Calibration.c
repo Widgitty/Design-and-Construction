@@ -9,18 +9,20 @@
 
 #define Delay osDelay
 
-
 I2C_HandleTypeDef hi2c1;
-void I2Cinit(void)
-{
-	GPIO_InitTypeDef GPIO_InitStruct;
+
+calibStructTypeDef calibStruct;
+calibStoreTypeDef momoryStruct;
+
+
+void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c) {
+		GPIO_InitTypeDef GPIO_InitStruct;
 	__HAL_RCC_I2C3_CLK_ENABLE();
 	__GPIOA_CLK_ENABLE();
 	__GPIOC_CLK_ENABLE();
-	/**I2C1 GPIO Configuration
-	PA8     ------> I2C3_SCL
-	PC9     ------> I2C3_SDA
-	*/
+	// I2C1 GPIO Configuration
+	// PA8     ------> I2C3_SCL
+	// PC9     ------> I2C3_SDA
 	GPIO_InitStruct.Pin = GPIO_PIN_8;
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
@@ -34,7 +36,11 @@ void I2Cinit(void)
 	GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
 	GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+}
 
+
+void I2Cinit(void)
+{
 	hi2c1.Instance = I2C3;
 	hi2c1.Init.ClockSpeed = 100000;
 	hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
@@ -48,14 +54,8 @@ void I2Cinit(void)
 }
 
 
-
-
-
-
-
 void Calibrate(int mode, int range) {
 	
-	uint8_t zero = 0x00;
 	uint8_t address = 0x00;
 	int cursor = 0;
 	int pos = 0;
@@ -201,3 +201,115 @@ void Calibrate(int mode, int range) {
 	LCD_Write_At("", 0, 0, 1);
 	HAL_I2C_DeInit(&hi2c1);
 }
+
+
+calibStructTypeDef Read_Calibration() {
+	calibStructTypeDef calibStruct;
+	uint8_t address = 0x00;
+	uint8_t *calibStructPointer = (uint8_t*)&calibStruct;
+	int size = sizeof(calibStruct);
+	int i = 0;
+	
+	// Load stucture
+	I2Cinit();
+	
+	// Set address
+	for (i=0; i < size; i+=8) {
+		address = i;
+		HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &address, 1, 5000);
+		Delay(1);
+		// Receive data
+		HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<0UL, calibStructPointer, 8, 5000);
+		// Convert 'data' array to structure
+		calibStructPointer += 8;
+		Delay(1);
+	}
+	
+	HAL_I2C_DeInit(&hi2c1);
+	return calibStruct;
+}
+
+
+void Write_Calibration(calibStructTypeDef calibStruct) {
+	uint8_t address = 0x00;
+	uint8_t *calibStructPointer = (uint8_t*)&calibStruct;
+	int size = sizeof(calibStruct);
+	int i, j = 0;
+	uint8_t data[9];
+	
+	// Load stucture
+	I2Cinit();
+	
+	
+	for (i=0; i < size; i+=8) {
+		address = i;
+		for (j = 0; j<8; j++) {
+			data[j+1] = (calibStructPointer[i+j]);
+			data[0] = address;
+		}
+		HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, data, 9, 5000);
+		Delay(10);
+	}
+	
+	HAL_I2C_DeInit(&hi2c1);
+}
+
+
+void Test_Calibration() {
+	char string[17];
+	calibStructTypeDef calibStructWrite;
+	
+	calibStructWrite.current.multiplier = 1.10;
+	calibStructWrite.current.zeroOffset = 1.20;
+	calibStructWrite.resistance.multiplier = 2.10;
+	calibStructWrite.resistance.zeroOffset = 2.20;
+	calibStructWrite.voltage.multiplier = 3.10;
+	calibStructWrite.voltage.zeroOffset = 3.20;
+	
+	Write_Calibration(calibStructWrite);
+	
+	calibStructTypeDef calibStructRead;
+	calibStructRead = Read_Calibration();
+	
+	// Print results
+	sprintf(string, "Current mult:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", calibStructRead.current.multiplier);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	
+	sprintf(string, "Current off:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", calibStructRead.current.zeroOffset);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	
+	sprintf(string, "Res mult:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", calibStructRead.resistance.multiplier);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	
+	sprintf(string, "Res off:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", calibStructRead.resistance.zeroOffset);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	
+	sprintf(string, "Voltage mult:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", calibStructRead.voltage.multiplier);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	
+	sprintf(string, "Voltage off:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", calibStructRead.voltage.zeroOffset);
+	LCD_Write_At(string, 0, 1, 0);
+	Delay(2000);
+	
+	LCD_Write_At("", 0, 0, 1);
+	
+}
+
+

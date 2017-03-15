@@ -8,31 +8,37 @@ typedef struct {
 } testStructTpeDef;
 
 
-// Calibration structures
+
 typedef struct {
 	double lowerPoint;
 	double upperPoint;
+} calibMeasurementTpeDef;
+
+typedef struct {
+	calibMeasurementTpeDef voltage;
+	calibMeasurementTpeDef current;
+	calibMeasurementTpeDef resistance;
+} calibStoreTypeDef;
+
+
+
+// Calibration structures
+// Only one calibration tructure per mode, as calibration is linear over ranges
+typedef struct {
 	double zeroOffset;
 	double multiplier;
-} calibRangeTpeDef;
+} calibAdjustTpeDef;
 
 
 typedef struct {
-	calibRangeTpeDef voltage;
-	calibRangeTpeDef current;
-	calibRangeTpeDef resistance;
+	calibAdjustTpeDef voltage;
+	calibAdjustTpeDef current;
+	calibAdjustTpeDef resistance;
 } calibStructTypeDef;
 
 
 extern void Calibrate(int mode, int range);
-
-
-/* LED Definitions */
-//#define GPIO_NUM     5                        /* Number of user LEDs          */
-
-//extern void GPIO_Init(void);
-//extern void GPIO_On  (unsigned int num);
-//extern void GPIO_Off (unsigned int num);
-//extern void GPIO_Out (unsigned int value);
+extern calibStructTypeDef Read_Calibration(void);
+extern void Test_Calibration(void);
 
 #endif
