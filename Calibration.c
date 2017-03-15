@@ -54,6 +54,12 @@ void I2Cinit(void)
 }
 
 
+
+
+
+
+
+/*
 void Calibrate(int mode, int range) {
 	
 	uint8_t address = 0x00;
@@ -201,9 +207,38 @@ void Calibrate(int mode, int range) {
 	LCD_Write_At("", 0, 0, 1);
 	HAL_I2C_DeInit(&hi2c1);
 }
+*/
 
 
-calibStructTypeDef Read_Calibration() {
+calibStoreTypeDef Read_Calibration() {
+	calibStoreTypeDef calibStruct;
+	uint8_t address = 0x00;
+	uint8_t *calibStructPointer = (uint8_t*)&calibStruct;
+	int size = sizeof(calibStruct);
+	int i = 0;
+	
+	// Load stucture
+	I2Cinit();
+	
+	// Set address
+	for (i=0; i < size; i+=8) {
+		address = i;
+		HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &address, 1, 5000);
+		Delay(1);
+		// Receive data
+		HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<0UL, calibStructPointer, 8, 5000);
+		// Convert 'data' array to structure
+		calibStructPointer += 8;
+		Delay(1);
+	}
+	
+	HAL_I2C_DeInit(&hi2c1);
+	return calibStruct;
+}
+
+
+
+calibStructTypeDef Get_Calibration() {
 	calibStructTypeDef calibStruct;
 	uint8_t address = 0x00;
 	uint8_t *calibStructPointer = (uint8_t*)&calibStruct;
@@ -230,7 +265,7 @@ calibStructTypeDef Read_Calibration() {
 }
 
 
-void Write_Calibration(calibStructTypeDef calibStruct) {
+void Write_Calibration(calibStoreTypeDef calibStruct) {
 	uint8_t address = 0x00;
 	uint8_t *calibStructPointer = (uint8_t*)&calibStruct;
 	int size = sizeof(calibStruct);
@@ -239,7 +274,6 @@ void Write_Calibration(calibStructTypeDef calibStruct) {
 	
 	// Load stucture
 	I2Cinit();
-	
 	
 	for (i=0; i < size; i+=8) {
 		address = i;
@@ -257,54 +291,54 @@ void Write_Calibration(calibStructTypeDef calibStruct) {
 
 void Test_Calibration() {
 	char string[17];
-	calibStructTypeDef calibStructWrite;
+	calibStoreTypeDef calibStructWrite;
 	
-	calibStructWrite.current.multiplier = 1.10;
-	calibStructWrite.current.zeroOffset = 1.20;
-	calibStructWrite.resistance.multiplier = 2.10;
-	calibStructWrite.resistance.zeroOffset = 2.20;
-	calibStructWrite.voltage.multiplier = 3.10;
-	calibStructWrite.voltage.zeroOffset = 3.20;
+	calibStructWrite.current.lowerPoint = 1.10;
+	calibStructWrite.current.upperPoint = 1.20;
+	calibStructWrite.resistance.lowerPoint = 2.10;
+	calibStructWrite.resistance.upperPoint = 2.20;
+	calibStructWrite.voltage.lowerPoint = 3.10;
+	calibStructWrite.voltage.upperPoint = 3.20;
 	
 	Write_Calibration(calibStructWrite);
 	
-	calibStructTypeDef calibStructRead;
+	calibStoreTypeDef calibStructRead;
 	calibStructRead = Read_Calibration();
 	
 	// Print results
-	sprintf(string, "Current mult:");
+	sprintf(string, "Current low:");
 	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", calibStructRead.current.multiplier);
+	sprintf(string, "%1.3lf", calibStructRead.current.lowerPoint);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	
-	sprintf(string, "Current off:");
+	sprintf(string, "Current high:");
 	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", calibStructRead.current.zeroOffset);
+	sprintf(string, "%1.3lf", calibStructRead.current.upperPoint);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	
-	sprintf(string, "Res mult:");
+	sprintf(string, "Res low:");
 	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", calibStructRead.resistance.multiplier);
+	sprintf(string, "%1.3lf", calibStructRead.resistance.lowerPoint);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	
-	sprintf(string, "Res off:");
+	sprintf(string, "Res high:");
 	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", calibStructRead.resistance.zeroOffset);
+	sprintf(string, "%1.3lf", calibStructRead.resistance.upperPoint);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	
-	sprintf(string, "Voltage mult:");
+	sprintf(string, "Voltage low:");
 	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", calibStructRead.voltage.multiplier);
+	sprintf(string, "%1.3lf", calibStructRead.voltage.lowerPoint);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	
-	sprintf(string, "Voltage off:");
+	sprintf(string, "Voltage high:");
 	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", calibStructRead.voltage.zeroOffset);
+	sprintf(string, "%1.3lf", calibStructRead.voltage.upperPoint);
 	LCD_Write_At(string, 0, 1, 0);
 	Delay(2000);
 	
@@ -312,4 +346,164 @@ void Test_Calibration() {
 	
 }
 
+
+
+
+
+
+
+
+
+
+
+void Calibrate(int mode, int range) {
+	char string[17];
+	// Load current calibration data
+	calibStoreTypeDef calibStruct;
+	calibStruct = Read_Calibration();
+	
+		uint32_t value = 0;
+	double value_calk = 0;
+	value = read_ADC1();
+	value = (value *16);
+	value_calk = adcConv(mode, value, &range);
+	
+	// change stuff
+	
+	Write_Calibration(calibStruct);
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+		uint8_t address = 0x00;
+	int cursor = 0;
+	int pos = 0;
+	testStructTpeDef testStruct;
+	
+	
+	uint32_t btns = 0;
+	LCD_Write_At("", 0, 0, 1);
+	
+	// Load stucture
+	I2Cinit();
+	uint8_t data[9];
+	// Set address
+	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &address, 1, 5000);
+	Delay(1);
+	// Receive data
+	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<0UL, (uint8_t*)&data, 8, 5000);
+	// Convert 'data' array to structure
+	testStruct.point1 = *((double*) &data);
+	Delay(1);
+	// Set address
+	address = 0x08;
+	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &address, 1, 5000);
+	Delay(1);
+	// Receive data
+	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<0UL, (uint8_t*)&data, 8, 5000);
+	// Convert 'data' array to structure
+	testStruct.point2 = *((double*) &data);
+
+	double number;
+	
+	switch (mode) {
+		case 0:
+			number = testStruct.point1;
+			address = 0x00;
+		break;
+		case 1:
+			number = testStruct.point2;
+			address = 0x08;
+		break;
+		case 2:
+			number = 0;
+			address = 0x0F;
+		break;
+		default:
+			sprintf(string, "Undefined mode!");
+			LCD_Write_At(string, 0, 0, 0);
+			Delay(1000);
+		break;
+	}
+	
+	
+	//number = 1.0;
+	
+	while ((btns = SWT_Debounce()) != 0x8000) {
+
+		
+		switch (btns) {
+			case 0x0100:
+				if (cursor > 0) {
+					cursor --;
+					pos --;
+					if (cursor == 1)
+						cursor --;
+				}
+			break;
+			case 0x0200:
+				if (cursor < 4) {
+					cursor ++;
+					pos ++;
+					if (cursor == 1)
+						cursor ++;
+				}
+			break;
+			case 0x0400:
+				number -= pow(10, (-pos));
+			break;
+			case 0x0800:
+				number += pow(10, (-pos));
+			break;
+			case 0x1000:
+				number = (double) 0.0;
+			break;
+			default:
+				//blah
+			break;
+		}
+		
+		sprintf(string, "%1.3lf", number);
+		LCD_Write_At(string, 0, 0, 0);
+		LCD_Write_At("     ", 0, 1, 0);
+		LCD_Write_At("^", cursor, 1, 0); // TODO: Replace with proper cursor
+		Delay(100);
+	}
+	
+	// Measure value
+	uint32_t value = 0;
+	double value_calk = 0;
+	value = read_ADC1();
+	value = (value *16);
+	value_calk = adcConv(mode, value, &range);
+	
+	// Calculate error
+	double error = number - value_calk;
+	
+	// Correct
+	
+	// Save
+	// Convert structure to 'data' array
+	//number = *((double*) &data);
+	uint8_t *numpointer = (uint8_t*) &number;
+	int i;
+	for (i = 0; i<8; i++) {
+		data[i+1] = (numpointer[i]);
+		//data[i+1] = i;
+	}
+	data[0] = address;
+	
+	// Set address and data
+	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, data, 9, 5000);
+}
 

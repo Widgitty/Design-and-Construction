@@ -38,7 +38,7 @@ typedef struct {
 
 
 extern void Calibrate(int mode, int range);
-extern calibStructTypeDef Read_Calibration(void);
+extern calibStoreTypeDef Read_Calibration(void);
 extern void Test_Calibration(void);
 
 #endif
