@@ -6,7 +6,9 @@
 #include "Timers.h"
 #include "GPIO.h"
 #include "stm32f4xx_hal_rcc.h"
+#include "Calculations.h"
 #define resistance 10000;
+#define M_PI 3.14159265358979323846
 /* Utility class to perform mathematical operations such as ADC conversion */
 
 
@@ -14,10 +16,16 @@
 double switchRange(int value, int *rangep, double scale);
 double adcConv(int mode, double value, int *rangep);
 double capCalc(void);
+double inductanceCalc(void);
+void setTimerValue(int timer);
 
 TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
 TIM_HandleTypeDef timer_Instance_2 = { .Instance = TIM3};
+TIM_HandleTypeDef timer_Instance_3 = { .Instance = TIM4};
 int capacitorState = 0;
+int inductanceState = 0;
+uint32_t timerValueI = 0;
+uint32_t timerValueIOld = 0;
 
 
 double adcConv(int mode, double value, int *rangep){
@@ -26,24 +34,35 @@ double adcConv(int mode, double value, int *rangep){
 	double inputCurrent = 3*pow(10,-6); // 3 microamp system input current - constant defined by hardware team
 
 	
-	// CURRENT MODE - input value ranges from [0 to 3], output ranges from [-1 to 1]
-	if (mode ==	0){ 
+	switch(mode)
+	{
+		// CURRENT MODE - input value ranges from [0 to 3], output ranges from [-1 to 1]
+		case 0:
 			output = switchRange(value, rangep, 0.66);
-	}
-	
-	// VOLTAGE MODE input - value ranges from [0 to 3], output ranges from [-10 to 10]
-	if (mode ==	1){ 
-		output = switchRange(value, rangep, 6.66);
-	} 
-	
-	// RESISTANCE MODE - Use ohms law to calculate R. 
-	if (mode ==	2){ 
-		*rangep = 0;
-		output = ((double)value / (pow(2.0, 16.0)) * 3.3) / inputCurrent;		
-	} 	
-	// CAPACITANCE MODE - Timer needs to be started.
-	if (mode == 3){
-		output = capCalc();
+			break;
+		// VOLTAGE MODE input - value ranges from [0 to 3], output ranges from [-10 to 10]
+		case 1:
+			output = switchRange(value, rangep, 6.66);
+			break;
+		// RESISTANCE MODE - Use ohms law to calculate R. 
+		case 2:
+			*rangep = 0;
+			output = ((double)value / (pow(2.0, 16.0)) * 3.3) / inputCurrent;	
+			break;
+		// CAPACITANCE MODE - Timer needs to be started.
+		case 3:
+			output = capCalc();
+			break;
+		// INDUCTANCE MODE
+		case 4:
+			output = inductanceCalc();
+			break;
+		case 5:
+			output = 0.0;
+			break;
+		default:
+			output = 0.0;
+			break;
 	}
 	return output;		
 }
@@ -141,4 +160,28 @@ double capCalc(){
 		return output;
 }
 
-
+void setTimerValue(int timer){
+	
+	timerValueIOld = timerValueI;
+	timerValueI = timer;
+	
+}
+double inductanceCalc(){
+	
+	double output = 0.0;
+	if(inductanceState == 0)
+	{
+		HAL_TIM_Base_Stop(&timer_Instance_1);
+		__HAL_TIM_SET_COUNTER(&timer_Instance_1, 0);
+		HAL_TIM_Base_Start(&timer_Instance_3);
+		HAL_TIM_Base_Start_IT(&timer_Instance_3);
+		inductanceState = 1;
+	}
+	else if(inductanceState == 1){
+		output = timerValueI/10000 - timerValueIOld/10000;
+		output = 1/output;
+		output = 1/(4*M_PI*M_PI*output*output*0.000001);
+	}
+	
+	return output;;
+}

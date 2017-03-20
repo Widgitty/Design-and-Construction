@@ -55,7 +55,7 @@ void Thread_System (void const *argument) {
 	
 	// Ranging perameters
 	int range = 0; // lower = larger range / lower resolution (for Amps)
-	int mode = 0; // C, V, R
+	int mode = 0; // C, V, R, F, H
 
 	
 	
@@ -91,6 +91,11 @@ void Thread_System (void const *argument) {
 					unit[0] = 'F';
 					LED_Out(8);
 					capacitorState = 0;
+					lcd_write_string("              ", 0,0);
+				break;
+				case 4: 
+					unit[0] = 'H';
+					LED_Out(16);
 					lcd_write_string("              ", 0,0);
 				break;
 				default:
