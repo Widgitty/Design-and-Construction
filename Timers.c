@@ -25,9 +25,9 @@ void Timer_Init(void) {
 	HAL_TIM_Base_Start_IT(&timer_Instance_1);
 	
 	__TIM4_CLK_ENABLE();
-	timer_Instance_3.Init.Prescaler = clockFreq/11001;
+	timer_Instance_3.Init.Prescaler = clockFreq/10000;
 	timer_Instance_3.Init.CounterMode = TIM_COUNTERMODE_UP;
-	timer_Instance_3.Init.Period = 10;
+	timer_Instance_3.Init.Period = 10000;
 	timer_Instance_3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer_Instance_3.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance_3);

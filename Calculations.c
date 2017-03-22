@@ -8,7 +8,7 @@
 #include "stm32f4xx_hal_rcc.h"
 #include "Calculations.h"
 #define resistance 10000;
-#define capValue 0.00001;
+#define capValue 0.000002;
 #define M_PI 3.14159265358979323846
 /* Utility class to perform mathematical operations such as ADC conversion */
 
@@ -27,6 +27,7 @@ int capacitorState = 0;
 int inductanceState = 0;
 uint32_t timerValueI = 0;
 uint32_t timerValueIOld = 0;
+double inductanceOld = 0.0;
 
 
 double adcConv(int mode, double value, int *rangep){
@@ -192,17 +193,17 @@ double inductanceCalc(){
 		{
 			output = 50000 + timerValueI - timerValueIOld;
 		}
-		
-		output = output*0.0001;
-		
-		if(output != 0){
-			output = 1/output;
-			output = 1/(output*output*output_Modifier);
-		}
-		else
-		{
-			output = 0;
-		}
+			output = output*0.0001;
+			
+			if(output != 0){
+				output = 1/output;
+				output = 1/(output*output*output_Modifier);
+				inductanceOld = output;
+			}
+			else
+			{
+				output = 0;
+			}
 		
 	}
 	
