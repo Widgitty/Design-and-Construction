@@ -8,10 +8,10 @@
 #include "math.h"
 #include "LED.h"
 #include "SWT.h"
-#include "LCD.h"
 #include "ADC.h"
 #include "GPIO.h"
-#include "LCD_Thread.h"
+#include "Timers.h"
+#include "lcd_driver.h"
 
 
 
@@ -24,6 +24,8 @@
  *----------------------------------------------------------------------------*/
 int main (void) {
 	
+	
+	
 	osKernelInitialize();     
 
   HAL_Init();           
@@ -34,16 +36,13 @@ int main (void) {
   SWT_Init();
 	ADC1_Init();
 	GPIO_Init();
+	Timer_Init();
+	Interrupt_Init();
 	
+	lcd_init(LCD_LINES_TWO, LCD_CURSOR_OFF, LCD_CBLINK_OFF, 128);
+	lcd_clear_display();
 	
-  LCD_Initpins();	
-	LCD_DriverOn();
 	Delay(10);
-	LCD_Init();
-	LCD_DriverOn();
-	LCD_On(1);
-	
 	Init_Thread_System();
-	Init_Thread_LCD();
 
 }
