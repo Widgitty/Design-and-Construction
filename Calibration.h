@@ -10,8 +10,10 @@ typedef struct {
 
 
 typedef struct {
-	double lowerPoint;
-	double upperPoint;
+	double lowerPointIn;
+	double lowerPointOut;
+	double upperPointIn;
+	double upperPointOut;
 } calibMeasurementTpeDef;
 
 typedef struct {

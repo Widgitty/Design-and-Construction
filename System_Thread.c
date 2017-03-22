@@ -75,8 +75,8 @@ void Thread_System (void const *argument) {
 				mode = 2;
 			break;
 			case 0x8000:
-				//Calibrate(mode, range);
-				Test_Calibration();
+				Calibrate(mode, range);
+				//Test_Calibration();
 			break;
 			default:
 				//blah
