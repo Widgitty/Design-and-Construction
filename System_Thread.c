@@ -18,13 +18,7 @@
 #include "Calculations.h"
 #include "Serial.h"
 #include "String.h"
-<<<<<<< HEAD
 #include "Calibration.h"
-
-// replace Delay with osDelay for compatibility with RTOS
-#define Delay osDelay
-
-=======
 #include "lcd_driver.h"
 
 // replace Delay with osDelay for compatibility with RTOS
@@ -32,7 +26,6 @@
 #define resistance 10000;
  
 static TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
->>>>>>> master
 
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
@@ -54,17 +47,12 @@ void Set_Button_Update(void){
 
 void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
-	
-<<<<<<< HEAD
+	char string[17];
+
 	//SerialInit();
 	//SerialReceiveStart();
-		
-=======
-	char string[17];
-	SerialInit();
-	SerialReceiveStart();
 	
->>>>>>> master
+	
 	uint32_t value = 0;
 	double value_calk = 0;
 	char unit[2] = {'A', '\0'};
@@ -82,30 +70,8 @@ void Thread_System (void const *argument) {
 		Delay(10);
 		
 		mode = Get_Mode();
-		
-<<<<<<< HEAD
-		switch (btns) {
-			case 0x0100:
-				mode = 0;
-			break;
-			case 0x0200:
-				mode = 1;
-			break;
-			case 0x0400:
-				mode = 2;
-			break;
-			case 0x8000:
-				Calibrate(mode, range);
-				//Test_Calibration();
-			break;
-			default:
-				//blah
-			break;
-		}
-=======
+
 		// this code is only executed if a button update happened (a button was pressed)
->>>>>>> master
-		
 		if(buttonUpdate == 1){
 			buttonUpdate = 0;
 			switch (mode) {
@@ -175,7 +141,8 @@ void Thread_System (void const *argument) {
 		//SerialReceive();
 		
 		//SerialCheckMode(&mode);
-
+		
+		Check_Calibration_Flag(mode, range);
 		
 	}
 }

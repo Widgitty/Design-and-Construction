@@ -1,11 +1,11 @@
 #include "Calibration.h"
 #include "STM32F4xx_hal.h"
 #include "cmsis_os.h"
-#include "LCD_Thread.h"
 #include "SWT.h"
 #include "Math.h"
 #include "ADC.h"
 #include "Calculations.h" // should be able to remove this later? or integrate the files together
+#include "lcd_driver.h"
 
 #define Delay osDelay
 
@@ -14,6 +14,8 @@ I2C_HandleTypeDef hi2c1;
 
 calibStructTypeDef calibStruct;
 calibStoreTypeDef momoryStruct;
+
+int calibration_flag = 0;
 
 
 void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c) {
@@ -297,79 +299,91 @@ void Test_Calibration() {
 	calibStructRead = Read_Calibration();
 	
 	// Print results
+	lcd_clear_display();
 	sprintf(string, "Current low In:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.current.lowerPointIn);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Current low Out:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.current.lowerPointOut);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Current high In:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.current.upperPointIn);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Current high Out:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.current.upperPointOut);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Res low In:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.resistance.lowerPointIn);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Res low Out:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.resistance.lowerPointOut);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Res high In:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.resistance.upperPointIn);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Res high Out:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.resistance.upperPointOut);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Voltage low In:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.voltage.lowerPointIn);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Voltage low Out:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.voltage.lowerPointOut);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Voltage high In:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.voltage.upperPointIn);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
+	lcd_clear_display();
 	sprintf(string, "Voltage high Out:");
-	LCD_Write_At(string, 0, 0, 1);
+	lcd_write_string(string, 0, 0);
 	sprintf(string, "%1.3lf", calibStructRead.voltage.upperPointOut);
-	LCD_Write_At(string, 0, 1, 0);
+	lcd_write_string(string, 1, 0);
 	Delay(2000);
 	
-	LCD_Write_At("", 0, 0, 1);
+	lcd_clear_display();
 	
 }
 
@@ -399,7 +413,7 @@ void Calibrate(int mode, int range) {
 	int cursor = 0;
 	int pos = 0;
 	
-	LCD_Write_At("", 0, 0, 1);
+	lcd_clear_display();
 	
 	// Read current value from ADC
 	value = read_ADC1();
@@ -438,9 +452,8 @@ void Calibrate(int mode, int range) {
 			break;
 			case 0x2000:
 				calibInit();
-				LCD_Write_At("Momory init", 0, 0, 1);
+				lcd_write_string("Momory init", 0, 0);
 				Delay(2000);
-				LCD_Write_At("", 0, 0, 1);
 			break;
 			default:
 				//blah
@@ -448,9 +461,9 @@ void Calibrate(int mode, int range) {
 		}
 		
 		sprintf(string, "%1.3lf", target_value);
-		LCD_Write_At(string, 0, 0, 0);
-		LCD_Write_At("     ", 0, 1, 0);
-		LCD_Write_At("^", cursor, 1, 0); // TODO: Replace with proper cursor
+		lcd_write_string(string, 0, 0);
+		lcd_write_string("            ", 1, 0);
+		lcd_write_string("^", 1, cursor); // TODO: Replace with proper cursor
 		Delay(100);
 	}
 	
@@ -464,6 +477,21 @@ void Calibrate(int mode, int range) {
 	
 	// Write?
 	Write_Calibration(calibStruct);
-	LCD_Write_At("", 0, 0, 1);
+	lcd_clear_display();
+}
+
+
+
+extern void Set_Calibration_Flag(void) {
+	calibration_flag = 1;
+}
+
+
+extern void Check_Calibration_Flag(int mode, int range) {
+	if (calibration_flag == 1) {
+		calibration_flag = 0;
+		Calibrate(mode, range);
+		calibration_flag = 0;
+	}
 }
 
