@@ -8,6 +8,7 @@
 #include "stm32f4xx_hal_rcc.h"
 #include "Calculations.h"
 #define resistance 10000;
+#define capValue 0.00001;
 #define M_PI 3.14159265358979323846
 /* Utility class to perform mathematical operations such as ADC conversion */
 
@@ -169,18 +170,40 @@ void setTimerValue(int timer){
 double inductanceCalc(){
 	
 	double output = 0.0;
+	double output_Modifier = 4*M_PI*M_PI * capValue;
+	
 	if(inductanceState == 0)
 	{
 		HAL_TIM_Base_Stop(&timer_Instance_1);
 		__HAL_TIM_SET_COUNTER(&timer_Instance_1, 0);
+		HAL_TIM_Base_Start(&timer_Instance_1);
+		// this is the pulse generating timer
 		HAL_TIM_Base_Start(&timer_Instance_3);
 		HAL_TIM_Base_Start_IT(&timer_Instance_3);
 		inductanceState = 1;
 	}
 	else if(inductanceState == 1){
-		output = timerValueI/10000 - timerValueIOld/10000;
-		output = 1/output;
-		output = 1/(4*M_PI*M_PI*output*output*0.000001);
+		
+		
+		if(timerValueI > timerValueIOld){	
+			output = timerValueI - timerValueIOld;
+		}
+		else
+		{
+			output = 50000 + timerValueI - timerValueIOld;
+		}
+		
+		output = output*0.0001;
+		
+		if(output != 0){
+			output = 1/output;
+			output = 1/(output*output*output_Modifier);
+		}
+		else
+		{
+			output = 0;
+		}
+		
 	}
 	
 	return output;;

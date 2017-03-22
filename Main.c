@@ -30,7 +30,7 @@ int main (void) {
 
   SystemClock_Config();
 
-  LED_Init();  
+  LED_Init();
   SWT_Init();
 	ADC1_Init();
 	GPIO_Init();
