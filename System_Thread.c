@@ -52,6 +52,8 @@ void Thread_System (void const *argument) {
 	//SerialInit();
 	//SerialReceiveStart();
 	
+	Calibration_Init();
+	
 	
 	uint32_t value = 0;
 	double value_calk = 0;
@@ -109,7 +111,9 @@ void Thread_System (void const *argument) {
 		value = read_ADC1();
 		value = (value *16);
 		
-		value_calk = adcConv(mode, value, &range);
+		//value_calk = adcConv(mode, value, &range);
+		
+		value_calk = Calib_Conv_Test(mode, value, &range);
 		
 		// Set output based on range
 		switch (range) {

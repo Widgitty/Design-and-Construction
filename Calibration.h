@@ -38,7 +38,8 @@ typedef struct {
 	calibAdjustTpeDef resistance;
 } calibStructTypeDef;
 
-
+extern void Calibration_Init(void); // TODO: remove this?
+extern double Calib_Conv_Test(int mode, double value, int *rangep);
 extern void Calibrate(int mode, int range);
 extern calibStoreTypeDef Read_Calibration(void);
 extern void Test_Calibration(void);

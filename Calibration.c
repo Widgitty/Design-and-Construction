@@ -18,6 +18,21 @@ calibStoreTypeDef momoryStruct;
 int calibration_flag = 0;
 
 
+
+// Test assumes voltage mode with no scaling
+double Calib_Conv_Test(int mode, double value, int *rangep) {
+	// Convert to input voltage
+	double m = calibStruct.voltage.multiplier;
+	double c = calibStruct.voltage.zeroOffset;
+	// NOTE: this is scaled to 0-1 as an input. this is arbitrary and for testing only.
+	double output = ((double)value / (pow(2.0, 16.0)) * m) + c;
+	return output;
+}
+
+
+
+
+
 void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c) {
 		GPIO_InitTypeDef GPIO_InitStruct;
 	__HAL_RCC_I2C3_CLK_ENABLE();
@@ -270,30 +285,56 @@ void Write_Calibration(calibStoreTypeDef calibStruct) {
 }
 
 
-void calibInit() {
-	calibStoreTypeDef calibStructWrite;
+void Calculate_Calibration() {
+	// y = mx + c
+	// output = (input * multiplier) + zero_offset
 	
-	calibStructWrite.current.lowerPointIn = 1.11;
-	calibStructWrite.current.lowerPointOut = 1.12;
-	calibStructWrite.current.upperPointIn = 1.21;
-	calibStructWrite.current.upperPointOut = 1.22;
-	calibStructWrite.resistance.lowerPointIn = 2.11;
-	calibStructWrite.resistance.lowerPointOut = 2.12;
-	calibStructWrite.resistance.upperPointIn = 2.21;
-	calibStructWrite.resistance.upperPointOut = 2.22;
-	calibStructWrite.voltage.lowerPointIn = 3.11;
-	calibStructWrite.voltage.lowerPointOut = 3.12;
-	calibStructWrite.voltage.upperPointIn = 3.21;
-	calibStructWrite.voltage.upperPointOut = 3.22;
+	// (y2-y1) / (x2 - x1) = m
+	// c = x1*m + y1
+	double x1 = momoryStruct.voltage.lowerPointIn;
+	double x2 = momoryStruct.voltage.upperPointIn;
+	double y1 = momoryStruct.voltage.lowerPointOut;
+	double y2 = momoryStruct.voltage.upperPointOut;
 	
-	Write_Calibration(calibStructWrite);
+	//x1 = 0;
+	//x2 = 1;
+	//y1 = 0;
+	//y2 = 3;
+	
+	double m = (y2-y1)/(x2-x1);
+	double c = (x1*m) + y1;
+	//c = 0;
+	
+	calibStruct.voltage.multiplier = m;
+	calibStruct.voltage.zeroOffset = c;
+	//momoryStruct;
+}
+
+
+void Calibration_Init() {
+	
+	momoryStruct.current.lowerPointIn = 1.11;
+	momoryStruct.current.lowerPointOut = 1.12;
+	momoryStruct.current.upperPointIn = 1.21;
+	momoryStruct.current.upperPointOut = 1.22;
+	momoryStruct.resistance.lowerPointIn = 2.11;
+	momoryStruct.resistance.lowerPointOut = 2.12;
+	momoryStruct.resistance.upperPointIn = 2.21;
+	momoryStruct.resistance.upperPointOut = 2.22;
+	momoryStruct.voltage.lowerPointIn = 0;
+	momoryStruct.voltage.lowerPointOut = -6;
+	momoryStruct.voltage.upperPointIn = 1;
+	momoryStruct.voltage.upperPointOut = 3;
+	
+	Write_Calibration(momoryStruct);
+	Calculate_Calibration();
 }
 
 
 void Test_Calibration() {
 	char string[17];
 	
-	calibInit();
+	Calibration_Init();
 	
 	calibStoreTypeDef calibStructRead;
 	calibStructRead = Read_Calibration();
@@ -418,8 +459,8 @@ void Calibrate(int mode, int range) {
 	// Read current value from ADC
 	value = read_ADC1();
 	value = (value *16);
-	target_value = adcConv(mode, value, &range);
-	
+	//target_value = adcConv(mode, value, &range);
+	target_value = Calib_Conv_Test(mode, value, &range);
 	
 	// Allow user to adjust expected value
 	// TODO: fix this interface
@@ -451,7 +492,7 @@ void Calibrate(int mode, int range) {
 				target_value = (double) 0.0;
 			break;
 			case 0x2000:
-				calibInit();
+				Calibration_Init();
 				lcd_write_string("Momory init", 0, 0);
 				Delay(2000);
 			break;
