@@ -13,7 +13,7 @@
 I2C_HandleTypeDef hi2c1;
 
 calibStructTypeDef calibStruct;
-calibStoreTypeDef momoryStruct;
+calibStoreTypeDef memoryStruct;
 
 int calibration_flag = 0;
 
@@ -25,7 +25,7 @@ double Calib_Conv_Test(int mode, double value, int *rangep) {
 	double m = calibStruct.voltage.multiplier;
 	double c = calibStruct.voltage.zeroOffset;
 	// NOTE: this is scaled to 0-1 as an input. this is arbitrary and for testing only.
-	double output = ((double)value / (pow(2.0, 16.0)) * m) + c;
+	double output = ((double)value * m) + c;
 	return output;
 }
 
@@ -77,155 +77,7 @@ void I2Cinit(void)
 
 
 
-/*
-void Calibrate(int mode, int range) {
-	
-	uint8_t address = 0x00;
-	int cursor = 0;
-	int pos = 0;
-	char string[17];
-	testStructTpeDef testStruct;
-	
-	
-	uint32_t btns = 0;
-	LCD_Write_At("", 0, 0, 1);
-	
-	// Load stucture
-	I2Cinit();
-	uint8_t data[9];
-	// Set address
-	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &address, 1, 5000);
-	Delay(1);
-	// Receive data
-	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<0UL, (uint8_t*)&data, 8, 5000);
-	// Convert 'data' array to structure
-	testStruct.point1 = *((double*) &data);
-	Delay(1);
-	// Set address
-	address = 0x08;
-	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, &address, 1, 5000);
-	Delay(1);
-	// Receive data
-	HAL_I2C_Master_Receive(&hi2c1, (0xA0)<<0UL, (uint8_t*)&data, 8, 5000);
-	// Convert 'data' array to structure
-	testStruct.point2 = *((double*) &data);
 
-	double number;
-	
-	switch (mode) {
-		case 0:
-			number = testStruct.point1;
-			address = 0x00;
-		break;
-		case 1:
-			number = testStruct.point2;
-			address = 0x08;
-		break;
-		case 2:
-			number = 0;
-			address = 0x0F;
-		break;
-		default:
-			sprintf(string, "Undefined mode!");
-			LCD_Write_At(string, 0, 0, 0);
-			Delay(1000);
-		break;
-	}
-	
-	
-	//number = 1.0;
-	
-	while ((btns = SWT_Debounce()) != 0x8000) {
-
-		
-		switch (btns) {
-			case 0x0100:
-				if (cursor > 0) {
-					cursor --;
-					pos --;
-					if (cursor == 1)
-						cursor --;
-				}
-			break;
-			case 0x0200:
-				if (cursor < 4) {
-					cursor ++;
-					pos ++;
-					if (cursor == 1)
-						cursor ++;
-				}
-			break;
-			case 0x0400:
-				number -= pow(10, (-pos));
-			break;
-			case 0x0800:
-				number += pow(10, (-pos));
-			break;
-			case 0x1000:
-				number = (double) 0.0;
-			break;
-			default:
-				//blah
-			break;
-		}
-		
-		sprintf(string, "%1.3lf", number);
-		LCD_Write_At(string, 0, 0, 0);
-		LCD_Write_At("     ", 0, 1, 0);
-		LCD_Write_At("^", cursor, 1, 0); // TODO: Replace with proper cursor
-		Delay(100);
-	}
-	
-	// Measure value
-	uint32_t value = 0;
-	double value_calk = 0;
-	value = read_ADC1();
-	value = (value *16);
-	value_calk = adcConv(mode, value, &range);
-	
-	// Calculate error
-	double error = number - value_calk;
-	
-	// Correct
-	
-	// Save
-	// Convert structure to 'data' array
-	//number = *((double*) &data);
-	uint8_t *numpointer = (uint8_t*) &number;
-	int i;
-	for (i = 0; i<8; i++) {
-		data[i+1] = (numpointer[i]);
-		//data[i+1] = i;
-	}
-	data[0] = address;
-	
-	// Set address and data
-	HAL_I2C_Master_Transmit(&hi2c1, (0xA0)<<0UL, data, 9, 5000);
-	
-	
-	// Print info
-	
-	sprintf(string, "Calibrated at:");
-	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", number);
-	LCD_Write_At(string, 0, 1, 0);
-	Delay(2000);
-
-	sprintf(string, "Adjusted:");
-	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", error);
-	LCD_Write_At(string, 0, 1, 0);
-	Delay(2000);
-	
-	sprintf(string, "I2C:");
-	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.4lf", number);
-	LCD_Write_At(string, 0, 1, 0);
-	Delay(2000);
-	LCD_Write_At("", 0, 0, 1);
-	HAL_I2C_DeInit(&hi2c1);
-}
-*/
 
 calibStoreTypeDef Read_Calibration() {
 	calibStoreTypeDef calibStruct;
@@ -291,10 +143,10 @@ void Calculate_Calibration() {
 	
 	// (y2-y1) / (x2 - x1) = m
 	// c = x1*m + y1
-	double x1 = momoryStruct.voltage.lowerPointIn;
-	double x2 = momoryStruct.voltage.upperPointIn;
-	double y1 = momoryStruct.voltage.lowerPointOut;
-	double y2 = momoryStruct.voltage.upperPointOut;
+	double x1 = memoryStruct.voltage.lowerPointIn;
+	double x2 = memoryStruct.voltage.upperPointIn;
+	double y1 = memoryStruct.voltage.lowerPointOut;
+	double y2 = memoryStruct.voltage.upperPointOut;
 	
 	//x1 = 0;
 	//x2 = 1;
@@ -302,7 +154,7 @@ void Calculate_Calibration() {
 	//y2 = 3;
 	
 	double m = (y2-y1)/(x2-x1);
-	double c = (x1*m) + y1;
+	double c = y1 - (x1*m);
 	//c = 0;
 	
 	calibStruct.voltage.multiplier = m;
@@ -311,22 +163,36 @@ void Calculate_Calibration() {
 }
 
 
+void Calibration_Factory_Reset() {
+	
+	memoryStruct.current.lowerPointIn = 1.11;
+	memoryStruct.current.lowerPointOut = 1.12;
+	memoryStruct.current.upperPointIn = 1.21;
+	memoryStruct.current.upperPointOut = 1.22;
+	memoryStruct.resistance.lowerPointIn = 2.11;
+	memoryStruct.resistance.lowerPointOut = 2.12;
+	memoryStruct.resistance.upperPointIn = 2.21;
+	memoryStruct.resistance.upperPointOut = 2.22;
+	//memoryStruct.voltage.lowerPointIn = 0;
+	//memoryStruct.voltage.lowerPointOut = 0;
+	//memoryStruct.voltage.upperPointIn = 1;
+	//memoryStruct.voltage.upperPointOut = (3/(pow(2.0, 16.0))*16);
+	
+	memoryStruct.voltage.lowerPointIn = 0;
+	memoryStruct.voltage.lowerPointOut = -3;
+	memoryStruct.voltage.upperPointIn = 4095; // max raw ADC value
+	memoryStruct.voltage.upperPointOut = 5;
+	// 3 is a generic scaling
+	// /(pow(2.0, 16.0)) scales to zero to one
+	// still don't know what the *16 does.
+	
+	Write_Calibration(memoryStruct);
+	Calculate_Calibration();
+}
+
+
 void Calibration_Init() {
-	
-	momoryStruct.current.lowerPointIn = 1.11;
-	momoryStruct.current.lowerPointOut = 1.12;
-	momoryStruct.current.upperPointIn = 1.21;
-	momoryStruct.current.upperPointOut = 1.22;
-	momoryStruct.resistance.lowerPointIn = 2.11;
-	momoryStruct.resistance.lowerPointOut = 2.12;
-	momoryStruct.resistance.upperPointIn = 2.21;
-	momoryStruct.resistance.upperPointOut = 2.22;
-	momoryStruct.voltage.lowerPointIn = 0;
-	momoryStruct.voltage.lowerPointOut = -6;
-	momoryStruct.voltage.upperPointIn = 1;
-	momoryStruct.voltage.upperPointOut = 3;
-	
-	Write_Calibration(momoryStruct);
+	memoryStruct = Read_Calibration();
 	Calculate_Calibration();
 }
 
@@ -441,30 +307,27 @@ void Test_Calibration() {
 void Calibrate(int mode, int range) {
 	char string[17];
 	// Load current calibration data
-	calibStoreTypeDef calibStruct;
-	calibStruct = Read_Calibration();
+	memoryStruct = Read_Calibration();
 	
 	// Setup variables
 	uint32_t value = 0;
 	double target_value = 0;
-	value = read_ADC1();
-	value = (value *16);
-	target_value = adcConv(mode, value, &range);
 	uint32_t btns = 0;
 	int cursor = 0;
 	int pos = 0;
+	int exit = 0;
 	
 	lcd_clear_display();
 	
 	// Read current value from ADC
 	value = read_ADC1();
-	value = (value *16);
+	//value = (value *16);
 	//target_value = adcConv(mode, value, &range);
 	target_value = Calib_Conv_Test(mode, value, &range);
 	
 	// Allow user to adjust expected value
 	// TODO: fix this interface
-	while ((btns = SWT_Debounce()) != 0x8000) {
+	while (((btns = SWT_Debounce()) != 0x8000) & (exit == 0)) {
 		switch (btns) {
 			case 0x0100:
 				if (cursor > 0) {
@@ -492,9 +355,15 @@ void Calibrate(int mode, int range) {
 				target_value = (double) 0.0;
 			break;
 			case 0x2000:
-				Calibration_Init();
-				lcd_write_string("Momory init", 0, 0);
+				Calibration_Factory_Reset();
+				lcd_write_string("Factory Reset", 0, 0);
 				Delay(2000);
+				exit = 1;
+			break;
+			case 0x4000:
+				lcd_write_string("Back", 0, 0);
+				Delay(2000);
+				exit = 1;
 			break;
 			default:
 				//blah
@@ -508,16 +377,37 @@ void Calibrate(int mode, int range) {
 		Delay(100);
 	}
 	
+	if (exit == 0) {
+		double half_point = (memoryStruct.voltage.upperPointIn + memoryStruct.voltage.lowerPointIn)/2;
+		// Write new target value into structure
+		if (value < half_point) {
+			memoryStruct.voltage.lowerPointIn = value;
+			memoryStruct.voltage.lowerPointOut = target_value;
+			lcd_clear_display();
+			lcd_write_string("Lower point set", 0, 0);
+			sprintf(string, "%d, %1.3lf", value, target_value);
+			lcd_write_string(string, 1, 0);
+			Delay(2000);
+			lcd_clear_display();
+		}
+		else {
+			memoryStruct.voltage.upperPointIn = value;
+			memoryStruct.voltage.upperPointOut = target_value;
+			lcd_clear_display();
+			lcd_write_string("Upper point set", 0, 0);
+			sprintf(string, "%d, %1.3lf", value, target_value);
+			lcd_write_string(string, 1, 0);
+			Delay(2000);
+			lcd_clear_display();
+		}
+		
+		// Recalculate convertion
+		Calculate_Calibration();
+		
+		// Write?
+		Write_Calibration(memoryStruct);
+	}
 	
-	
-	
-	// Recalculate convertion
-	// TODO: based on target_value
-	
-	
-	
-	// Write?
-	Write_Calibration(calibStruct);
 	lcd_clear_display();
 }
 
