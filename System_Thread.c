@@ -139,9 +139,6 @@ void Thread_System (void const *argument) {
 			lcd_write_string(" ", 0, 14);
 			sprintf(string, "%s %s\r\n", string, unit);
 		}
-		
-		sprintf(string, "%d", value);
-		lcd_write_string(string, 1, 0);
 
 		//SerialSend((uint8_t*)string, strlen(string), 1000);
 		

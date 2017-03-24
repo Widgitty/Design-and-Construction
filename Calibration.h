@@ -1,6 +1,8 @@
 #ifndef __CALIBRATION_H
 #define __CALIBRATION_H
 
+#define NUMMODES 3
+
 // Structure definitions
 typedef struct {
 	double point1;
@@ -38,6 +40,10 @@ typedef struct {
 	calibAdjustTpeDef resistance;
 } calibStructTypeDef;
 
+
+extern calibStructTypeDef Get_Calibration(void); // TODO: remove this?
+
+// Sort throught these
 extern void Calibration_Init(void); // TODO: remove this?
 extern double Calib_Conv_Test(int mode, double value, int *rangep);
 extern void Calibrate(int mode, int range);

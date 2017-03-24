@@ -8,6 +8,7 @@
 #include "lcd_driver.h"
 
 #define Delay osDelay
+#define NUMDIGITS 4
 
 // File specific variables
 I2C_HandleTypeDef hi2c1;
@@ -18,29 +19,51 @@ calibStoreTypeDef memoryStruct;
 int calibration_flag = 0;
 
 
+//==========================================//
+//= Test Function to Replace Calculations  =//
+//==========================================//
+// - This function should be deleted 				//
+//			after integration.									//
+// - Test assumes voltage mode with no 			//
+//			scaling.														//
+// - This can be used as reference for			//
+//			integration with the calculation		//
+//			code.																//
+//==========================================//
 
-// Test assumes voltage mode with no scaling
 double Calib_Conv_Test(int mode, double value, int *rangep) {
+	// Get calibration data
+	//TODO: have this passed into calculations and stored in system thread?
+	calibStructTypeDef local_calib_struct = Get_Calibration();
+	
 	// Convert to input voltage
-	double m = calibStruct.voltage.multiplier;
-	double c = calibStruct.voltage.zeroOffset;
-	// NOTE: this is scaled to 0-1 as an input. this is arbitrary and for testing only.
+	// This will depend on mode, and extra scaling should be added to 
+	// deal with ranges.
+	double m = local_calib_struct.voltage.multiplier;
+	double c = local_calib_struct.voltage.zeroOffset;
 	double output = ((double)value * m) + c;
+	
+	// Return scaled value
 	return output;
 }
 
 
-
-
+//==========================================//
+//====== Callback for Initialisation  ======//
+//==========================================//
+// - This function handles clock and GPIO 	//
+//			configuration.											//
+//																					//
+// I2C3 GPIO Configuration:									//
+// PA8     ------> I2C3_SCL									//
+// PC9     ------> I2C3_SDA									//
+//==========================================//
 
 void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c) {
 		GPIO_InitTypeDef GPIO_InitStruct;
 	__HAL_RCC_I2C3_CLK_ENABLE();
 	__GPIOA_CLK_ENABLE();
 	__GPIOC_CLK_ENABLE();
-	// I2C1 GPIO Configuration
-	// PA8     ------> I2C3_SCL
-	// PC9     ------> I2C3_SDA
 	GPIO_InitStruct.Pin = GPIO_PIN_8;
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
@@ -57,6 +80,15 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c) {
 }
 
 
+//==========================================//
+//======= I2C Initilisation Function =======//
+//==========================================//
+// - This function handles the 							//
+//			configuration of the I2C device.		//
+// - The device can be de-initialised with:	//
+//			HAL_I2C_DeInit(&hi2c1);							//
+//==========================================//
+
 void I2Cinit(void)
 {
 	hi2c1.Instance = I2C3;
@@ -72,12 +104,14 @@ void I2Cinit(void)
 }
 
 
-
-
-
-
-
-
+//==========================================//
+//============ Read Calibration ============//
+//==========================================//
+// - This function reads calibration points	//
+//			from EEPROM and returns a 					//
+//			'calibStoreTypeDef' structure 			//
+//			containing this data.								//
+//==========================================//
 
 calibStoreTypeDef Read_Calibration() {
 	calibStoreTypeDef calibStruct;
@@ -106,12 +140,27 @@ calibStoreTypeDef Read_Calibration() {
 }
 
 
+//==========================================//
+//============ Get Calibration  ============//
+//==========================================//
+// - This function returns the stored 			//
+//			calibration	data for use in 				//
+//			calculations.												//
+//==========================================//
 
 calibStructTypeDef Get_Calibration() {
 	// Calculate?
 	return calibStruct;
 }
 
+
+//==========================================//
+//=========== Write Calibration  ===========//
+//==========================================//
+// - This function writes the currently			//
+//			stored calibration points to 				//
+//			EEPROM.															//
+//==========================================//
 
 void Write_Calibration(calibStoreTypeDef calibStruct) {
 	uint8_t address = 0x00;
@@ -120,7 +169,6 @@ void Write_Calibration(calibStoreTypeDef calibStruct) {
 	int i, j = 0;
 	uint8_t data[9];
 	
-	// Load stucture
 	I2Cinit();
 	
 	for (i=0; i < size; i+=8) {
@@ -137,59 +185,74 @@ void Write_Calibration(calibStoreTypeDef calibStruct) {
 }
 
 
+//==========================================//
+//========= Calculate Calibration  =========//
+//==========================================//
+// - This function calculates calibration		//
+//			data based on stored calibration		//
+//			points, and stores it locally.			//
+//==========================================//
+
 void Calculate_Calibration() {
+	
+	//TODO: this needs to be done for each mode.
+	
 	// y = mx + c
 	// output = (input * multiplier) + zero_offset
 	
-	// (y2-y1) / (x2 - x1) = m
-	// c = x1*m + y1
 	double x1 = memoryStruct.voltage.lowerPointIn;
 	double x2 = memoryStruct.voltage.upperPointIn;
 	double y1 = memoryStruct.voltage.lowerPointOut;
 	double y2 = memoryStruct.voltage.upperPointOut;
 	
-	//x1 = 0;
-	//x2 = 1;
-	//y1 = 0;
-	//y2 = 3;
-	
 	double m = (y2-y1)/(x2-x1);
 	double c = y1 - (x1*m);
-	//c = 0;
 	
 	calibStruct.voltage.multiplier = m;
 	calibStruct.voltage.zeroOffset = c;
-	//momoryStruct;
 }
 
 
+//==========================================//
+//============= Factory Reset  =============//
+//==========================================//
+// - This function resets the stored data		//
+//			and EEPROM data to the factory			//
+//			defaults.														//
+// - These defaults are based on data				//
+//			measured in the lab.								//
+// - The data is not yet accurate.					//
+//==========================================//
+
 void Calibration_Factory_Reset() {
+	int temp = 0;
 	
-	memoryStruct.current.lowerPointIn = 1.11;
-	memoryStruct.current.lowerPointOut = 1.12;
-	memoryStruct.current.upperPointIn = 1.21;
-	memoryStruct.current.upperPointOut = 1.22;
-	memoryStruct.resistance.lowerPointIn = 2.11;
-	memoryStruct.resistance.lowerPointOut = 2.12;
-	memoryStruct.resistance.upperPointIn = 2.21;
-	memoryStruct.resistance.upperPointOut = 2.22;
-	//memoryStruct.voltage.lowerPointIn = 0;
-	//memoryStruct.voltage.lowerPointOut = 0;
-	//memoryStruct.voltage.upperPointIn = 1;
-	//memoryStruct.voltage.upperPointOut = (3/(pow(2.0, 16.0))*16);
+	memoryStruct.current.lowerPointIn = 0;
+	memoryStruct.current.lowerPointOut = temp;
+	memoryStruct.current.upperPointIn = 4095;
+	memoryStruct.current.upperPointOut = temp;
+	memoryStruct.resistance.lowerPointIn = 0;
+	memoryStruct.resistance.lowerPointOut = temp;
+	memoryStruct.resistance.upperPointIn = 4095;
+	memoryStruct.resistance.upperPointOut = temp;
+
 	
 	memoryStruct.voltage.lowerPointIn = 0;
-	memoryStruct.voltage.lowerPointOut = -3;
+	memoryStruct.voltage.lowerPointOut = -10;
 	memoryStruct.voltage.upperPointIn = 4095; // max raw ADC value
-	memoryStruct.voltage.upperPointOut = 5;
-	// 3 is a generic scaling
-	// /(pow(2.0, 16.0)) scales to zero to one
-	// still don't know what the *16 does.
+	memoryStruct.voltage.upperPointOut = 10;
 	
 	Write_Calibration(memoryStruct);
 	Calculate_Calibration();
 }
 
+
+//==========================================//
+//======= Calibration Initialisation =======//
+//==========================================//
+// - This function initialises the 					//
+//			calibration code.										//
+//==========================================//
 
 void Calibration_Init() {
 	memoryStruct = Read_Calibration();
@@ -197,10 +260,20 @@ void Calibration_Init() {
 }
 
 
+//==========================================//
+//====== Test Function to Test EEPROM ======//
+//==========================================//
+// - This function should be deleted 				//
+//			after integration.									//
+// - This function tests EEPROM writes and	//
+//			reads to all required addresses.		//
+//==========================================//
+
 void Test_Calibration() {
 	char string[17];
 	
 	Calibration_Init();
+	Calibration_Factory_Reset();
 	
 	calibStoreTypeDef calibStructRead;
 	calibStructRead = Read_Calibration();
@@ -295,14 +368,11 @@ void Test_Calibration() {
 }
 
 
-
-
-
-
-
-
-
-
+//==========================================//
+//=========== Calibrate Function ===========//
+//==========================================//
+// - This function...												//
+//==========================================//
 
 void Calibrate(int mode, int range) {
 	char string[17];
@@ -313,7 +383,7 @@ void Calibrate(int mode, int range) {
 	uint32_t value = 0;
 	double target_value = 0;
 	uint32_t btns = 0;
-	int cursor = 0;
+	int cursor = 1;
 	int pos = 0;
 	int exit = 0;
 	
@@ -327,32 +397,109 @@ void Calibrate(int mode, int range) {
 	
 	// Allow user to adjust expected value
 	// TODO: fix this interface
+	
+	
+	// Scale down to proper standard form
+	double mantissa = target_value;	
+	int exponent = 0;
+	int sign = 1;
+	if (mantissa != 0) {
+		if (mantissa < 0) {
+			mantissa = -mantissa;
+			sign = 0;
+		}
+		while (mantissa >= 10) {
+			mantissa = mantissa / 10;
+			exponent ++;
+		}
+		while (mantissa < 1) {
+			mantissa = mantissa * 10;
+			exponent --;
+		}
+	}
+	
+	// Convert to set of individual digits for editing
+	double temp = mantissa;
+
+	int digits[NUMDIGITS];
+
+	for (int i = 0; i < NUMDIGITS; i++) {
+		digits[i] = floor(temp);
+		temp = (temp - digits[i])*10;
+	}
+	
+	
+
+	
 	while (((btns = SWT_Debounce()) != 0x8000) & (exit == 0)) {
 		switch (btns) {
 			case 0x0100:
 				if (cursor > 0) {
+					if (cursor == 9)
+						cursor = 6;
 					cursor --;
 					pos --;
-					if (cursor == 1)
+					if (cursor == 2)
 						cursor --;
 				}
 			break;
 			case 0x0200:
-				if (cursor < 4) {
+				if (cursor < 6) {
 					cursor ++;
 					pos ++;
-					if (cursor == 1)
+					if (cursor == 2)
 						cursor ++;
+					if (cursor == 6)
+						cursor = 9;
 				}
 			break;
 			case 0x0400:
-				target_value -= pow(10, (-pos));
+				// Decrease
+				if (cursor == 0) {
+					// change sign
+					if (sign == 0)
+						sign = 1;
+					else
+						sign = 0;
+				}
+				else if ((cursor >= 1) & (cursor <= 5)) {
+					// change digit
+					digits[pos] --;
+					if (digits[pos] < 0)
+						digits[pos] = 9;
+				}
+				else {
+					// change exponent
+					exponent --;
+				}
+				
 			break;
 			case 0x0800:
-				target_value += pow(10, (-pos));
+				// Increase
+				if (cursor == 0) {
+					// change sign
+					if (sign == 0)
+						sign = 1;
+					else
+						sign = 0;
+				}
+				else if ((cursor >= 1) & (cursor <= 5)) {
+					// change digit
+					digits[pos] ++;
+					if (digits[pos] > 9)
+						digits[pos] = 0;
+				}
+				else {
+					// change exponent
+					exponent ++;
+				};
 			break;
 			case 0x1000:
-				target_value = (double) 0.0;
+				for (int i = 0; i < NUMDIGITS; i++) {
+					digits[i] = 0;
+				}
+				exponent = 0;
+				sign = 1;
 			break;
 			case 0x2000:
 				Calibration_Factory_Reset();
@@ -370,7 +517,11 @@ void Calibrate(int mode, int range) {
 			break;
 		}
 		
-		sprintf(string, "%1.3lf", target_value);
+		
+		if (sign == 0)
+			sprintf(string, "-%d.%d%d%d E+%d ", digits[0], digits[1], digits[2], digits[3], exponent);
+		else
+			sprintf(string, "+%d.%d%d%d E+%d ", digits[0], digits[1], digits[2], digits[3], exponent);
 		lcd_write_string(string, 0, 0);
 		lcd_write_string("            ", 1, 0);
 		lcd_write_string("^", 1, cursor); // TODO: Replace with proper cursor
@@ -378,6 +529,18 @@ void Calibrate(int mode, int range) {
 	}
 	
 	if (exit == 0) {
+		
+		// Convert digits back to double
+		target_value = 0;
+		for (int i = NUMDIGITS-1; i >= 0; i--) {
+			target_value = (target_value/10) + digits[i];
+		}
+		target_value = target_value * pow(10, exponent);
+		if (sign == 0)
+			target_value = -target_value;
+		
+		
+		
 		double half_point = (memoryStruct.voltage.upperPointIn + memoryStruct.voltage.lowerPointIn)/2;
 		// Write new target value into structure
 		if (value < half_point) {
@@ -412,11 +575,28 @@ void Calibrate(int mode, int range) {
 }
 
 
+//==========================================//
+//================ Set Flag ================//
+//==========================================//
+// - This function sets a flag so that the	//
+//			calibration routine will be run			//
+//			next time the flag is checked				//
+// - This allows for the calibration				//
+//			routine to be triggered from an ISR	//
+//			(Interrupt Service Routine).				//
+//==========================================//
 
 extern void Set_Calibration_Flag(void) {
 	calibration_flag = 1;
 }
 
+
+//==========================================//
+//=============== Check Flag ===============//
+//==========================================//
+// - This function triggers the calibration	//
+//			routine if the flag has ben set.		//
+//==========================================//
 
 extern void Check_Calibration_Flag(int mode, int range) {
 	if (calibration_flag == 1) {
