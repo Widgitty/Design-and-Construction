@@ -1,27 +1,21 @@
 #ifndef __CALIBRATION_H
 #define __CALIBRATION_H
 
-#define NUMMODES 3
+#define NUM_MODES 3
 
 // Structure definitions
-typedef struct {
-	double point1;
-	double point2;
-} testStructTpeDef;
-
-
 
 typedef struct {
 	double lowerPointIn;
 	double lowerPointOut;
 	double upperPointIn;
 	double upperPointOut;
-} calibMeasurementTpeDef;
+} calibMeasurementTypeDef;
 
 typedef struct {
-	calibMeasurementTpeDef voltage;
-	calibMeasurementTpeDef current;
-	calibMeasurementTpeDef resistance;
+	calibMeasurementTypeDef voltage;
+	calibMeasurementTypeDef current;
+	calibMeasurementTypeDef resistance;
 } calibStoreTypeDef;
 
 
@@ -31,25 +25,25 @@ typedef struct {
 typedef struct {
 	double zeroOffset;
 	double multiplier;
-} calibAdjustTpeDef;
+} calibAdjustTypeDef;
 
 
 typedef struct {
-	calibAdjustTpeDef voltage;
-	calibAdjustTpeDef current;
-	calibAdjustTpeDef resistance;
+	calibAdjustTypeDef voltage;
+	calibAdjustTypeDef current;
+	calibAdjustTypeDef resistance;
 } calibStructTypeDef;
 
 
 extern calibStructTypeDef Get_Calibration(void); // TODO: remove this?
 
 // Sort throught these
-extern void Calibration_Init(void); // TODO: remove this?
-extern double Calib_Conv_Test(int mode, double value, int *rangep);
-extern void Calibrate(int mode, int range);
-extern calibStoreTypeDef Read_Calibration(void);
-extern void Test_Calibration(void);
+extern void Calibration_Init(calibAdjustTypeDef *calib_Data); // TODO: remove this?
+extern double Calib_Conv_Test(int mode, double value, int *rangep, calibAdjustTypeDef *calib_Data);
+extern void Calibrate(int mode, int range, calibAdjustTypeDef *calib_Data);
+extern void Read_Calibration(calibMeasurementTypeDef *calib_Points);
+extern void Test_Calibration(calibAdjustTypeDef *calib_Data);
 extern void Set_Calibration_Flag(void);
-extern void Check_Calibration_Flag(int mode, int range);
+extern void Check_Calibration_Flag(int mode, int range, calibAdjustTypeDef *calib_Data);
 
 #endif

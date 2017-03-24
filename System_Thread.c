@@ -52,7 +52,9 @@ void Thread_System (void const *argument) {
 	//SerialInit();
 	//SerialReceiveStart();
 	
-	Calibration_Init();
+	calibAdjustTypeDef calib_Data[NUM_MODES];
+	
+	Calibration_Init(calib_Data);
 	
 	
 	uint32_t value = 0;
@@ -113,7 +115,7 @@ void Thread_System (void const *argument) {
 		
 		//value_calk = adcConv(mode, value, &range);
 		
-		value_calk = Calib_Conv_Test(mode, value, &range);
+		value_calk = Calib_Conv_Test(mode, value, &range, calib_Data);
 		
 		// Set output based on range
 		switch (range) {
@@ -146,7 +148,7 @@ void Thread_System (void const *argument) {
 		
 		//SerialCheckMode(&mode);
 		
-		Check_Calibration_Flag(mode, range);
+		Check_Calibration_Flag(mode, range, calib_Data);
 		
 	}
 }
