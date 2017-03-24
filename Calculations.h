@@ -3,6 +3,6 @@
 
 extern double switchRange(int value, int *rangep, double scale);
 extern double adcConv(int mode, double value, int *range);
-extern double movAvg(double avgIn, int mode);
+extern double movAvg(double avgIn, int mode, int *rangep);
 
 #endif

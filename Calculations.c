@@ -11,30 +11,39 @@
 
 
 // Define function prototypes
+void restartCounter(void);
 double switchRange(int value, int *rangep, double scale);
 double adcConv(int mode, double value, int *rangep);
+double movAvg(double output, int mode, int *rangep);
+double capCalc(void);
 
-double movAvg(double output, int mode);
 
 // Define class variables
 	double avgOut;
+	double avgWaitTime = 0.0;
 	int deltaMode = 0;
-	double avgDiff;
+	char string[17];
 
-double capCalc(void);
+
 
 TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
 TIM_HandleTypeDef timer_Instance_2 = { .Instance = TIM3};
 int capacitorState = 0;
 
 
-// Define function definitions
+// Define function definitions.
 
+// Initialise the counter instance.
+void restartCounter(void){
+	__HAL_TIM_SET_COUNTER(&timer_Instance_2, 0);
+	HAL_TIM_Base_Start(&timer_Instance_2);
+}
+	
+// Perform analog to digital conversion.
 double adcConv(int mode, double value, int *rangep){
 
 	double output;	// MODE dependant digital output. 
 	double inputCurrent = 3*pow(10,-6); // 3 microamp system input current - constant defined by hardware team
-
 	
 	// CURRENT MODE - input value ranges from [0 to 3], output ranges from [-1 to 1]
 	if (mode ==	0){ 
@@ -49,52 +58,41 @@ double adcConv(int mode, double value, int *rangep){
 	// RESISTANCE MODE - Use ohms law to calculate R. 
 	if (mode ==	2){ 
 		*rangep = 0;
-		output = ((double)value / (pow(2.0, 16.0)) * 3.3) / inputCurrent;		
-		if (output >= 1000 && output){
+		output = ((double)value / (pow(2.0, 16.0)) * 3.0) / inputCurrent;		
+		if (output >= 1000){
 			*rangep = 1;
 			output/=1000;
 		}
 		else *rangep = 0;
 	} 	
 
-	
-	
-
 	// CAPACITANCE MODE - Timer needs to be started.
 	if (mode == 3){
 		output = capCalc();
 	}
-
-
 	return output;		
 	
 }
 
+//Utililty function to perform scaled auto ranging. Used in adcConv().
 double switchRange(int value, int *rangep, double scale){
 	
+	// Define the minimum and max number of ranges. 
 	int maxRange = 1;
 	int minRange = 0;
 	double output;
 	
 	output = (((double)value / (pow(2.0, 16.0)) * 3.0)-1.5) * scale;	
 	
-	
-	
+	// Convert TO and FROM milli-units depending on the range.
 	if ((output > -1) && (output < 1)){
 		if (*rangep < maxRange) {
 				*rangep = 1;
 		}
-		else {
-				//*rangep = 0;
-		}
 	}
 	else {
-	
 		if (*rangep > minRange) {
 			*rangep = 0;
-		}
-		else {
-				// TODO: Print error to LCD
 		}
 	}
 	
@@ -163,30 +161,80 @@ double capCalc(){
 		return output;
 }
 
+// Calculate a weighted moving average - slows down output display.
+// Averaging begins once a certain noise threshold or timer value has been reached.
+double movAvg(double avgIn, int mode, int *rangep){
 
-double movAvg(double avGin, int mode){
-	double aCoeff = 0.9;
-	double bCoeff = 0.1;
-	avgDiff = avgOut - avGin;
-	
-	 if (mode != deltaMode){
-			deltaMode = mode;
-		avgOut = 0;
-	 }
-	 
-	 if (mode == deltaMode){
-		avgOut = (aCoeff*avgOut + bCoeff*avGin);
-	 }
-	 
-
+	double aCoeff = 0.9999999;
+	double bCoeff = 0.0000001;
 		
+		// CURRENT MODE - averaging conditions for the milliamps range.
+		if(mode == 0 && (avgIn > avgOut + 10 || avgIn < avgOut - 10)){
+			avgOut = avgIn;
+			restartCounter();
+				
+		}
+		
+		// VOLTAGE MODE - averaging conditions for the volts range.
+		if(mode == 1 && *rangep == 0 && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
+			avgOut = avgIn;
+			restartCounter();
+				
+		}
+		
+		// VOLTAGE MODE - averaging conditions for the millivolts range.
+		if(mode == 1 && *rangep == 1 && (avgIn > avgOut + 100 || avgIn < avgOut - 100)){
+			avgOut = avgIn;
+			restartCounter();
+				
+		}
+		
+		// RESISTANCE MODE - averaging conditions for the ohms range.
+		if(mode == 2 && *rangep == 0 && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
+			avgOut = avgIn;
+			restartCounter();
+				
+		}
+		
+		// RESISTANCE MODE - averaging conditions for the kilohms range.
+		if(mode == 2 && *rangep == 1 && (avgIn > avgOut + 100 || avgIn < avgOut - 100)){
+			avgOut = avgIn;
+			restartCounter();
+				
+		}
+	 
+		// Restart the counter if the mode is changed.
+		if (mode != deltaMode){
+			deltaMode = mode;
+			restartCounter();
+			avgOut = avgIn;	 
+	 }
+	 
+	 // Perform the averaging calculation.
+	 if (mode == deltaMode){
+			// Convert value of timer instance to seconds.
+			avgWaitTime = __HAL_TIM_GET_COUNTER(&timer_Instance_2)*0.0001;
+			
+		 
+		 // Get output direct input if timer is less than 10ms.
+		 if(avgWaitTime < 0.1){
+				avgOut = avgIn;
+			}	
+			
+			//Stop the timer and begin averaging as input begins fluctuating.
+			if(avgOut > avgIn + 0.001 || avgOut < avgIn - 0.001){
+				HAL_TIM_Base_Stop(&timer_Instance_2);
+				avgOut = (aCoeff*avgOut + bCoeff*avgIn);
+			}
+	 }		
 
 	return avgOut;
 	
 };
 
 
+
 	
-	
+
 
 

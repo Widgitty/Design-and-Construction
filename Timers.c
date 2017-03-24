@@ -21,7 +21,7 @@ void Timer_Init(void) {
 	HAL_TIM_Base_Start(&timer_Instance_1);
 	HAL_TIM_Base_Start_IT(&timer_Instance_1);
 	
-	/*
+	
 	__TIM3_CLK_ENABLE();
 	timer_Instance_2.Init.Prescaler = clockFreq / 5000;
 	timer_Instance_2.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -29,8 +29,8 @@ void Timer_Init(void) {
 	timer_Instance_2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer_Instance_2.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance_2);
-	//HAL_TIM_Base_Start(&timer_Instance_2);
-	//HAL_TIM_Base_Start_IT(&timer_Instance_2);*/
+	HAL_TIM_Base_Start(&timer_Instance_2);
+	HAL_TIM_Base_Start_IT(&timer_Instance_2);
 }
 
 void Interrupt_Init(){

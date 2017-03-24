@@ -132,7 +132,7 @@ void Thread_System (void const *argument) {
 		
 		value_calk = adcConv(mode, value, &range);
 
-		value_calk = movAvg(value_calk, mode);
+		value_calk = movAvg(value_calk, mode, &range);
 
 		
 		// Set output based on range
@@ -152,7 +152,7 @@ void Thread_System (void const *argument) {
 		LCD_Write_At(string, 0, 0, 0);
 		LCD_Write_At(unit, 15, 0, 0);
 		
-		if (range == 1 && mode != 2) {
+		if (range == 1 && (mode == 0 || mode == 1)) {
 			LCD_Write_At("m", 14, 0, 0);
 			sprintf(string, "%s m%s\r\n", string, unit);
 		}
@@ -161,7 +161,8 @@ void Thread_System (void const *argument) {
 			LCD_Write_At("K", 14, 0, 0);
 			sprintf(string, "%s m%s\r\n", string, unit);
 		}
-	  else {
+		
+	  if (range == 0){
 			LCD_Write_At(" ", 14, 0, 0);
 			sprintf(string, "%s %s\r\n", string, unit);
 		}
