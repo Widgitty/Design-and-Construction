@@ -4,16 +4,21 @@
 #include "cmsis_os.h"
 #include "LED.h"
 #include "Timers.h"
+#include "LCD_Thread.h"
+#include "SWT.h"
+#include "ADC.h"
 #include "GPIO.h"
 #include "stm32f4xx_hal_rcc.h"
 #define resistance 10000;
+#define Delay osDelay;
 /* Utility class to perform mathematical operations such as ADC conversion */
 
 
 // Define function prototypes
 void restartCounter(void);
+void calibrate(int mode, int *rangep);
 double switchRange(int value, int *rangep, double scale);
-double adcConv(int mode, double value, int *rangep);
+double adcConv(int mode, int *rangep);
 double movAvg(double output, int mode, int *rangep);
 double capCalc(void);
 
@@ -40,8 +45,8 @@ void restartCounter(void){
 }
 	
 // Perform analog to digital conversion.
-double adcConv(int mode, double value, int *rangep){
-
+double adcConv(int mode, int *rangep){
+	double value = read_ADC1()*16;
 	double output;	// MODE dependant digital output. 
 	double inputCurrent = 3*pow(10,-6); // 3 microamp system input current - constant defined by hardware team
 	
@@ -59,11 +64,14 @@ double adcConv(int mode, double value, int *rangep){
 	if (mode ==	2){ 
 		*rangep = 0;
 		output = ((double)value / (pow(2.0, 16.0)) * 3.0) / inputCurrent;		
+		if (output < 1000){
+			*rangep = 0;
+		}	
 		if (output >= 1000){
 			*rangep = 1;
 			output/=1000;
 		}
-		else *rangep = 0;
+
 	} 	
 
 	// CAPACITANCE MODE - Timer needs to be started.
@@ -231,6 +239,73 @@ double movAvg(double avgIn, int mode, int *rangep){
 	return avgOut;
 	
 };
+
+void calibrate(int mode, int *rangep) {
+	int cursor = 0;
+	int pos = 0;
+	double number = 10.000;
+	char string[17];
+	
+	uint32_t btns = 0;
+	LCD_Write_At("", 0, 0, 1);
+	
+	while ((btns = SWT_Debounce()) != 0x8000) {
+
+		
+		switch (btns) {
+			case 0x0100:
+				if (cursor > 0) {
+					cursor --;
+					pos --;
+					if (cursor == 1)
+						cursor --;
+				}
+			break;
+			case 0x0200:
+				if (cursor < 4) {
+					cursor ++;
+					pos ++;
+					if (cursor == 1)
+						cursor ++;
+				}
+			break;
+			case 0x0400:
+				number -= pow(10, (-pos));
+			break;
+			case 0x0800:
+				number += pow(10, (-pos));
+			break;
+			default:
+				//blah
+			break;
+		}
+		
+		sprintf(string, "%1.3lf", number);
+		LCD_Write_At(string, 0, 0, 0);
+		LCD_Write_At("     ", 0, 1, 0);
+		LCD_Write_At("^", cursor, 1, 0); // TODO: Replace with proper cursor
+		osDelay(100);
+	}
+	
+	// Calculate error
+	double error = number - avgOut;
+
+	
+	// Correct
+	
+	sprintf(string, "Calibrated at:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", number);
+	LCD_Write_At(string, 0, 1, 0);
+	osDelay(2000);
+	LCD_Write_At("", 0, 0, 1);
+	sprintf(string, "Adjusted:");
+	LCD_Write_At(string, 0, 0, 1);
+	sprintf(string, "%1.3lf", error);
+	LCD_Write_At(string, 0, 1, 0);
+	osDelay(2000);
+	LCD_Write_At("", 0, 0, 1);
+}
 
 
 

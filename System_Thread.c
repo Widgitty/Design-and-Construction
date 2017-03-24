@@ -21,6 +21,7 @@
 #include "Serial.h"
 #include "String.h"
 
+
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
 #define resistance 10000;
@@ -43,78 +44,7 @@ int Init_Thread_System (void) {
 
 
 
-void Calibrate(int mode, int range) {
-	int cursor = 0;
-	int pos = 0;
-	double number = 1.234;
-	char string[17];
-	
-	uint32_t btns = 0;
-	LCD_Write_At("", 0, 0, 1);
-	
-	while ((btns = SWT_Debounce()) != 0x8000) {
 
-		
-		switch (btns) {
-			case 0x0100:
-				if (cursor > 0) {
-					cursor --;
-					pos --;
-					if (cursor == 1)
-						cursor --;
-				}
-			break;
-			case 0x0200:
-				if (cursor < 4) {
-					cursor ++;
-					pos ++;
-					if (cursor == 1)
-						cursor ++;
-				}
-			break;
-			case 0x0400:
-				number -= pow(10, (-pos));
-			break;
-			case 0x0800:
-				number += pow(10, (-pos));
-			break;
-			default:
-				//blah
-			break;
-		}
-		
-		sprintf(string, "%1.3lf", number);
-		LCD_Write_At(string, 0, 0, 0);
-		LCD_Write_At("     ", 0, 1, 0);
-		LCD_Write_At("^", cursor, 1, 0); // TODO: Replace with proper cursor
-		Delay(100);
-	}
-	
-	// Measure value
-	uint32_t value = 0;
-	double value_calk = 0;
-	value = read_ADC1();
-	value = (value *16);
-	value_calk = adcConv(mode, value, &range);
-	
-	// Calculate error
-	double error = number - value_calk;
-	
-	// Correct
-	
-	sprintf(string, "Calibrated at:");
-	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", number);
-	LCD_Write_At(string, 0, 1, 0);
-	Delay(2000);
-	LCD_Write_At("", 0, 0, 1);
-	sprintf(string, "Adjusted:");
-	LCD_Write_At(string, 0, 0, 1);
-	sprintf(string, "%1.3lf", error);
-	LCD_Write_At(string, 0, 1, 0);
-	Delay(2000);
-	LCD_Write_At("", 0, 0, 1);
-}
 
 
 
@@ -135,8 +65,8 @@ void Thread_System (void const *argument) {
 	
 	
 	
-	uint32_t value = 0;
-	double value_calk = 0;
+
+	double value_calc = 0;
 	char unit[2] = {'A', '\0'};
 	
 	// Ranging perameters
@@ -174,17 +104,9 @@ void Thread_System (void const *argument) {
 				LED_Out(8);
 				mode = 3;
 				capacitorState = 0;
-
-				mode = 0;
-			break;
-			case 0x0200:
-				mode = 1;
-			break;
-			case 0x0400:
-				mode = 2;
 			break;
 			case 0x8000:
-				Calibrate(mode, range);
+				calibrate(mode, &range);
 
 			break;
 			default:
@@ -213,14 +135,10 @@ void Thread_System (void const *argument) {
 			break;
 		}
 		
-		// Read ADC
-		value = read_ADC1();
-		value = (value *16);
+				// Read ADC, perform conversion and averaging functions. 
 		
-		value_calk = adcConv(mode, value, &range);
-
-		value_calk = movAvg(value_calk, mode, &range);
-
+		value_calc = adcConv(mode, &range);
+		value_calc = movAvg(value_calc, mode, &range);
 		
 		// Set output based on range
 		switch (range) {
@@ -235,7 +153,7 @@ void Thread_System (void const *argument) {
 			break;
 		}
 
-		sprintf(string, "%1.9lf", value_calk);
+		sprintf(string, "%1.9lf", value_calc);
 		LCD_Write_At(string, 0, 0, 0);
 		LCD_Write_At(unit, 15, 0, 0);
 		
