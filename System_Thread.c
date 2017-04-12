@@ -177,7 +177,8 @@ void Thread_System (void const *argument) {
 			sprintf(string, "%s %s\r\n", string, unit);
 		}
 
-		SerialSend((uint8_t*)string, strlen(string), 1000);
+		//SerialSend((uint8_t*)string, strlen(string));
+		SerialSend(value_calk, (uint8_t)mode, (uint8_t)range);
 		
 		SerialReceive();
 		

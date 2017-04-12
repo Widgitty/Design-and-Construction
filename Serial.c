@@ -85,31 +85,37 @@ int WiFiInit() {
 	
 	if (WiFiEnabled == 1) {
 		
+		// Set mode (1=station, 2=access point, 3=both)
 		SendString("AT+CWMODE=2\r\n");
 		if (ATResponse != 1)
 			ret = 1;
 		ATResponse = 0;
 		
-		SendString("AT+CWSAP=\"MultiMeter!\",\"123\",1,0\r\n");
+		// Set SSID, password, chaneel, encryption
+		SendString("AT+CWSAP=\"MultiMeter\",\"123\",1,0\r\n");
 		if (ATResponse != 1)
 			ret = 1;
 		ATResponse = 0;
 		
+		// Set single (0) or multiple (1) connection mode
 		SendString("AT+CIPMUX=1\r\n");
 		if (ATResponse != 1)
 			ret = 1;
 		ATResponse = 0;
-				
+		
+		// Enable or disable DHCP server
 		SendString("AT+CWDHCP=0,0\r\n");
 		if (ATResponse != 1)
 			ret = 1;
 		ATResponse = 0;
 		
+		// Set access point IP address
 		SendString("AT+CIPAP=\"192.168.1.1\"\r\n");
 		if (ATResponse != 1)
 			ret = 1;
 		ATResponse = 0;
 		
+		// Set server IP address and port
 		SendString("AT+CIPSERVER=1,1138\r\n");
 		if (ATResponse != 1)
 			ret = 1;
@@ -164,7 +170,7 @@ void SerialInit() {
 
 
 // Blocking send for now, could be better implemented in the future
-void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
+void SerialSendArray(uint8_t *pData, uint16_t Size) {
 	
 	// If in WiFI mode, send the data AT command
 	if (WiFiEnabled == 1) {
@@ -177,6 +183,41 @@ void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
 	while (doneFlag == 0) {
 		Delay(100);
 	}
+}
+
+
+void SerialSend(double value, uint8_t mode, uint8_t range) {
+	
+	char string[17];
+	char unit[2] = {'A', '\0'};
+	
+	switch (mode) {
+		case 0:
+			unit[0] = 'A';
+		break;
+		case 1:
+			unit[0] = 'V';
+		break;
+		case 2:
+			unit[0] = (char)0xDE;
+		break;
+		default:
+		break;
+	}
+	
+	sprintf(string, "%1.9lf\r\n", value);
+	
+	/*
+	if (range == 1) {
+		LCD_Write_At("m", 14, 0, 0);
+		sprintf(string, "%s m%s\r\n", string, unit);
+	} else {
+		LCD_Write_At(" ", 14, 0, 0);
+		sprintf(string, "%s %s\r\n", string, unit);
+	}
+	*/
+	
+	SerialSendArray((uint8_t*)string, strlen(string));
 	
 }
 
