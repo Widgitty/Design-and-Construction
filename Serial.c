@@ -91,7 +91,8 @@ int WiFiInit() {
 			ret = 1;
 		ATResponse = 0;
 		
-		// Set SSID, password, chaneel, encryption
+		// Set SSID, password, channel, encoding
+		// encoding: 0=open, 2=WPA_PSK, 3=WPA2_PSK, 4=WPA_WPA2_PSK
 		SendString("AT+CWSAP=\"MultiMeter\",\"123\",1,0\r\n");
 		if (ATResponse != 1)
 			ret = 1;
@@ -104,6 +105,9 @@ int WiFiInit() {
 		ATResponse = 0;
 		
 		// Enable or disable DHCP server
+		// <mode>,<enable>
+		// mode: 0=software aceess point, 1=station, 2=both
+		// enable: 0=enabled, 1=disabled
 		SendString("AT+CWDHCP=0,0\r\n");
 		if (ATResponse != 1)
 			ret = 1;
