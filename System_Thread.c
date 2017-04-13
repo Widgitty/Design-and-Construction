@@ -31,6 +31,7 @@ osThreadId tid_Thread_System;                              // thread id
 // Thread priority set to high, as system thread should not be blockable
 osThreadDef(Thread_System, osPriorityHigh, 1, 0);        // thread object
 uint32_t buttonUpdate = 0;
+uint32_t modeUpdate = 1;
 
 int Init_Thread_System (void) {
   tid_Thread_System = osThreadCreate(osThread(Thread_System), NULL);
@@ -56,6 +57,7 @@ void Thread_System (void const *argument) {
 	// Ranging perameters
 	int range = 0; // lower = larger range / lower resolution (for Amps)
 	int mode = 0; // C, V, R
+	LED_Out(1);
 
 	
 	
@@ -66,12 +68,16 @@ void Thread_System (void const *argument) {
 
 		Delay(10);
 		
-		mode = Get_Mode();
-		
 		// this code is only executed if a button update happened (a button was pressed)
 		
 		if(buttonUpdate == 1){
 			buttonUpdate = 0;
+			mode = Get_Mode();
+			modeUpdate = 1;
+		}
+		
+		if (modeUpdate == 1) {
+			modeUpdate = 0;
 			switch (mode) {
 				case 0:
 					unit[0] = 'A';
@@ -140,8 +146,10 @@ void Thread_System (void const *argument) {
 		
 		SerialReceive();
 		
+		int modePrev = mode;
 		SerialCheckMode(&mode);
-
+		if (modePrev != mode)
+			modeUpdate = 1;
 		
 	}
 }

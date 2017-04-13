@@ -16,7 +16,6 @@
 #include "STM32F4xx.h"
 #include "SWT.h"
 #include "LED.h"
-#include "LCD.h"
 #include "System_Thread.h"
 
 const unsigned long SWT_mask[] = {1UL << 8, 1UL << 9, 1UL << 10, 1UL << 11, 1UL << 12, 1UL << 13, 1UL << 14, 1UL << 15};
