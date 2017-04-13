@@ -1,9 +1,12 @@
 #include "Timers.h"
-#include "LED.h"
+#include "GPIO.h"
 #include "stm32f4xx_hal_rcc.h"
 
 static TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
 static TIM_HandleTypeDef timer_Instance_2 = { .Instance = TIM3};
+static TIM_HandleTypeDef timer_Instance_3 = { .Instance = TIM4};
+
+int on = 0;
 
 // Initialises a simple timer. Timing has to be set up correctly
 void Timer_Init(void) {
@@ -21,16 +24,24 @@ void Timer_Init(void) {
 	HAL_TIM_Base_Start(&timer_Instance_1);
 	HAL_TIM_Base_Start_IT(&timer_Instance_1);
 	
-	/*
+	__TIM4_CLK_ENABLE();
+	timer_Instance_3.Init.Prescaler = clockFreq/10000;
+	timer_Instance_3.Init.CounterMode = TIM_COUNTERMODE_UP;
+	timer_Instance_3.Init.Period = 10000;
+	timer_Instance_3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	timer_Instance_3.Init.RepetitionCounter = 0;
+	HAL_TIM_Base_Init(&timer_Instance_3);
+	
+	
 	__TIM3_CLK_ENABLE();
-	timer_Instance_2.Init.Prescaler = clockFreq / 5000;
+	timer_Instance_2.Init.Prescaler = clockFreq / 50000;
 	timer_Instance_2.Init.CounterMode = TIM_COUNTERMODE_UP;
 	timer_Instance_2.Init.Period = 50000;
 	timer_Instance_2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer_Instance_2.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance_2);
-	//HAL_TIM_Base_Start(&timer_Instance_2);
-	//HAL_TIM_Base_Start_IT(&timer_Instance_2);*/
+	HAL_TIM_Base_Start(&timer_Instance_2);
+	HAL_TIM_Base_Start_IT(&timer_Instance_2);
 }
 
 void Interrupt_Init(){
@@ -41,14 +52,42 @@ void Interrupt_Init(){
   GPIOB->OSPEEDR  &= ~((3UL << 2* 4));
   GPIOB->PUPDR    &= ~((3UL << 2* 4));
 	GPIOB->PUPDR    |= 	((2UL << 2* 4));
+	GPIOB->MODER    &= ~((3UL << 2* 5));
+  GPIOB->OSPEEDR  &= ~((3UL << 2* 5));
+  GPIOB->PUPDR    &= ~((3UL << 2* 5));
+	GPIOB->PUPDR    |= 	((2UL << 2* 5));
 	
 	SYSCFG->EXTICR[1] |= SYSCFG_EXTICR2_EXTI4_PB;
 	EXTI->RTSR |= 1UL << 4;
 	EXTI->IMR |= 1UL << 4;
 	NVIC_EnableIRQ(EXTI4_IRQn);
 	
+	SYSCFG->EXTICR[1] |= SYSCFG_EXTICR2_EXTI5_PB;
+	EXTI->RTSR |= 1UL << 5;
+	//EXTI->FTSR |= 1UL << 5;
+	EXTI->IMR |= 1UL << 5;
+	
+	
 	TIM2->DIER |= TIM_DIER_UIE;
 	NVIC_EnableIRQ(TIM2_IRQn);
+	
+	TIM4->DIER |= TIM_DIER_UIE;
+	NVIC_EnableIRQ(TIM4_IRQn);
+}
+
+void TIM4_IRQHandler(void){
+	TIM4->SR &= ~TIM_SR_UIF;
+	if(on == 0)
+	{
+		GPIO_On(3);
+		on = 1;
+	}
+	else
+	{
+		on = 0;
+		GPIO_Off(3);
+	}
+	
 }
 
 //timer interrupt to reset the capacitance measurements if a timeout happens (5 seconds)

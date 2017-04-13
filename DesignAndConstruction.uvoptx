@@ -207,12 +207,12 @@
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>temp_mode</ItemText>
+          <ItemText>rangep,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>1</count>
           <WinNumber>1</WinNumber>
-          <ItemText>capacitorState</ItemText>
+          <ItemText>output</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
@@ -254,6 +254,14 @@
         <Entry>
           <Name>System Viewer\EXTI</Name>
           <WinId>35904</WinId>
+        </Entry>
+        <Entry>
+          <Name>System Viewer\FSMC</Name>
+          <WinId>35902</WinId>
+        </Entry>
+        <Entry>
+          <Name>System Viewer\GPIOB</Name>
+          <WinId>35901</WinId>
         </Entry>
         <Entry>
           <Name>System Viewer\GPIOE</Name>
