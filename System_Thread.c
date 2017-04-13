@@ -19,6 +19,7 @@
 #include "Serial.h"
 #include "String.h"
 #include "lcd_driver.h"
+#include "Defines.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -65,12 +66,13 @@ void Thread_System (void const *argument) {
 	while (1) {
 		Delay(10);
 		
-		mode = Get_Mode();
+		
 		
 		// this code is only executed if a button update happened (a button was pressed)
 		
 		if(buttonUpdate == 1){
 			buttonUpdate = 0;
+			mode = Get_Mode();
 			switch (mode) {
 				case 0:
 					unit[0] = 'A';
@@ -96,6 +98,11 @@ void Thread_System (void const *argument) {
 				case 4: 
 					unit[0] = 'H';
 					LED_Out(16);
+					lcd_write_string("              ", 0,0);
+				break;
+				case 5:
+					unit[0] = 'H';
+					LED_Out(32);
 					lcd_write_string("              ", 0,0);
 				break;
 				default:
@@ -130,13 +137,41 @@ void Thread_System (void const *argument) {
 		lcd_write_string(string, 0, 0);
 		lcd_write_string(unit, 0, 15);
 		
+		switch(range)
+		{
+			case nano:
+				lcd_write_string("n", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+			case micro:
+				lcd_write_string("u", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+			case milli:
+				lcd_write_string("m", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+			case nothing:
+				lcd_write_string(" ", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+			case kilo:
+				lcd_write_string("k", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+			case mega:
+				lcd_write_string("M", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+		}
+		/*
 		if (range == 1) {
 			lcd_write_string("m", 0, 14);
 			sprintf(string, "%s m%s\r\n", string, unit);
 		} else {
 			lcd_write_string(" ", 0, 14);
 			sprintf(string, "%s %s\r\n", string, unit);
-		}
+		}*/
 
 		SerialSend((uint8_t*)string, strlen(string), 1000);
 		

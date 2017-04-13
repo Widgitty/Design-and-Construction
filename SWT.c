@@ -141,6 +141,10 @@ void Calc_Temp_Mode(void){
 			break;
 		case 16:
 			temp_mode = 4;
+			break;
+		case 32:
+			temp_mode = 5;
+			break;
 		default:
 			// nothing
 			break;

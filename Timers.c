@@ -34,7 +34,7 @@ void Timer_Init(void) {
 	
 	
 	__TIM3_CLK_ENABLE();
-	timer_Instance_2.Init.Prescaler = clockFreq / 5000;
+	timer_Instance_2.Init.Prescaler = clockFreq / 50000;
 	timer_Instance_2.Init.CounterMode = TIM_COUNTERMODE_UP;
 	timer_Instance_2.Init.Period = 50000;
 	timer_Instance_2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;

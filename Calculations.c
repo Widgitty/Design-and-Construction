@@ -7,6 +7,7 @@
 #include "GPIO.h"
 #include "stm32f4xx_hal_rcc.h"
 #include "Calculations.h"
+#include "Defines.h"
 #define resistance 10000;
 #define capValue 0.000002;
 #define M_PI 3.14159265358979323846
@@ -16,15 +17,18 @@
 // Define function prototypes
 double switchRange(int value, int *rangep, double scale);
 double adcConv(int mode, double value, int *rangep);
-double capCalc(void);
-double inductanceCalc(void);
+double capCalc(int *rangep);
+double inductanceCalc(int *rangep);
 void setTimerValue(int timer);
+double scaling(double output, int *rangep);
+double frequencyMeasure(int *rangep);
 
 TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
 TIM_HandleTypeDef timer_Instance_2 = { .Instance = TIM3};
 TIM_HandleTypeDef timer_Instance_3 = { .Instance = TIM4};
 int capacitorState = 0;
 int inductanceState = 0;
+int frequencyState = 0;
 uint32_t timerValueI = 0;
 uint32_t timerValueIOld = 0;
 double inductanceOld = 0.0;
@@ -48,19 +52,19 @@ double adcConv(int mode, double value, int *rangep){
 			break;
 		// RESISTANCE MODE - Use ohms law to calculate R. 
 		case 2:
-			*rangep = 0;
+			*rangep = nothing;
 			output = ((double)value / (pow(2.0, 16.0)) * 3.3) / inputCurrent;	
 			break;
 		// CAPACITANCE MODE - Timer needs to be started.
 		case 3:
-			output = capCalc();
+			output = capCalc(rangep);
 			break;
 		// INDUCTANCE MODE
 		case 4:
-			output = inductanceCalc();
+			output = inductanceCalc(rangep);
 			break;
 		case 5:
-			output = 0.0;
+			output = frequencyMeasure(rangep);
 			break;
 		default:
 			output = 0.0;
@@ -81,7 +85,7 @@ double switchRange(int value, int *rangep, double scale){
 	
 	if ((output > -1) && (output < 1)){
 		if (*rangep < maxRange) {
-				*rangep = 1;
+				*rangep = nothing;
 		}
 		else {
 				//*rangep = 0;
@@ -90,21 +94,20 @@ double switchRange(int value, int *rangep, double scale){
 	else {
 	
 		if (*rangep > minRange) {
-			*rangep = 0;
+			*rangep = nothing;
 		}
 		else {
 				// TODO: Print error to LCD
 		}
 	}
-	
-	if(*rangep == 1){
+	if(*rangep == milli){
 	output *= 1000;	
 	}
 	
 	return output;
 }
 
-double capCalc(){
+double capCalc(int *rangep){
 	
 		double output = 0;
 		int timerValue = 0;
@@ -157,9 +160,47 @@ double capCalc(){
 			// formula for capacitance
 			output = timeSeconds / resistance;
 			
+			
+			
+			
 		}
 		
-		return output;
+		
+		
+		
+		return scaling(output, rangep);
+}
+double scaling(double output, int *rangep){
+	if(output < 0.000001){
+		*rangep = nano;
+		output = output * 1000000000;
+	}	
+	else if(output < 0.001)
+	{
+		*rangep = micro;
+		output = output * 1000000;
+	}
+	else if(output < 1)
+	{
+		*rangep = milli;
+		output = output * 1000;
+	}
+	else if(output > 1000)
+	{
+		*rangep = kilo;
+		output = output/1000;
+	}
+	else if(output > 1000000)
+	{
+		*rangep = mega;
+		output = output/1000000;
+	}
+	else
+	{
+		output = output;
+		*rangep = nothing;
+	}
+	return output;
 }
 
 void setTimerValue(int timer){
@@ -168,7 +209,7 @@ void setTimerValue(int timer){
 	timerValueI = timer;
 	
 }
-double inductanceCalc(){
+double inductanceCalc(int *rangep){
 	
 	double output = 0.0;
 	double output_Modifier = 4*M_PI*M_PI * capValue;
@@ -178,6 +219,7 @@ double inductanceCalc(){
 		HAL_TIM_Base_Stop(&timer_Instance_1);
 		__HAL_TIM_SET_COUNTER(&timer_Instance_1, 0);
 		HAL_TIM_Base_Start(&timer_Instance_1);
+		
 		// this is the pulse generating timer
 		HAL_TIM_Base_Start(&timer_Instance_3);
 		HAL_TIM_Base_Start_IT(&timer_Instance_3);
@@ -193,19 +235,51 @@ double inductanceCalc(){
 		{
 			output = 50000 + timerValueI - timerValueIOld;
 		}
-			output = output*0.0001;
+		
+		output = output*0.0001;
 			
-			if(output != 0){
-				output = 1/output;
-				output = 1/(output*output*output_Modifier);
-				inductanceOld = output;
-			}
-			else
-			{
-				output = 0;
-			}
+		if(output != 0){
+			output = 1/output;
+			output = 1/(output*output*output_Modifier);
+			inductanceOld = output;
+		}
+		else
+		{
+			output = 0;
+		}
 		
 	}
 	
-	return output;;
+	return scaling(output, rangep);
+}
+double frequencyMeasure(int *rangep){
+	
+	
+	double output = 0.0;
+	if(frequencyState == 0)
+	{
+		HAL_TIM_Base_Stop(&timer_Instance_1);
+		__HAL_TIM_SET_COUNTER(&timer_Instance_1, 0);
+		HAL_TIM_Base_Start(&timer_Instance_1);
+		frequencyState = 1;
+	}
+	
+	else if(frequencyState == 1){
+		if(timerValueI > timerValueIOld){	
+			output = timerValueI - timerValueIOld;
+		}
+		
+		else
+		{
+			output = 50000 + timerValueI - timerValueIOld;
+		}
+		output = output*0.0001;
+		
+		// output is difference between timer values at this point.
+		
+		output = 1/output;
+		
+		
+	}
+	return scaling(output, rangep);
 }
