@@ -53,7 +53,7 @@ double adcConv(int mode, double value, int *rangep){
 		// RESISTANCE MODE - Use ohms law to calculate R. 
 		case 2:
 			*rangep = nothing;
-			output = ((double)value / (pow(2.0, 16.0)) * 3.3) / inputCurrent;	
+			output = scaling((((double)value / (pow(2.0, 16.0)) * 3.3) / inputCurrent), rangep);	
 			break;
 		// CAPACITANCE MODE - Timer needs to be started.
 		case 3:
@@ -75,16 +75,15 @@ double adcConv(int mode, double value, int *rangep){
 
 double switchRange(int value, int *rangep, double scale){
 	
-	int maxRange = 1;
-	int minRange = 0;
+	int maxRange = nothing;
+	int minRange = milli;
 	double output;
 	
 	output = (((double)value / (pow(2.0, 16.0)) * 3.3)-1.5) * scale;	
 	
 	
-	
 	if ((output > -1) && (output < 1)){
-		if (*rangep < maxRange) {
+		if (*rangep > minRange) {
 				*rangep = nothing;
 		}
 		else {
@@ -93,8 +92,8 @@ double switchRange(int value, int *rangep, double scale){
 	}
 	else {
 	
-		if (*rangep > minRange) {
-			*rangep = nothing;
+		if (*rangep < maxRange) {
+			*rangep = milli;
 		}
 		else {
 				// TODO: Print error to LCD
