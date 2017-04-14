@@ -229,20 +229,44 @@ void SerialSend(double value, uint8_t mode, uint8_t range) {
 		break;
 	}
 	
-	// Serialise data
+	uint8_t START_BYTE = 'D';
+	uint8_t checksum = 0x00;
 	datap = (uint8_t*) &value;
 	
-	data[0] = *(datap+7); //0x3F;
-	data[1] = *(datap+6); //0xF0;
-	data[2] = *(datap+5); //0x00;
-	data[3] = *(datap+4); //0x00;
-	data[4] = *(datap+3); //0x00;
-	data[5] = *(datap+2); //0x00;
-	data[6] = *(datap+1); //0x00;
-	data[7] = *(datap+0); //0x00;
+	// Serialise data
 	
-	data[8] = '\n';
-	//data[9] = '\0';
+	// Build data packet
+	// start byte
+	data[0] = START_BYTE;
+	checksum = checksum ^ data[0];
+	// datatype (only '1' currently supported)
+	data[1] = '1';
+	checksum = checksum ^ data[1];
+	// data
+	data[2] = *(datap+7);
+	checksum = checksum ^ data[2];
+	data[3] = *(datap+6);
+	checksum = checksum ^ data[3];
+	data[4] = *(datap+5);
+	checksum = checksum ^ data[4];
+	data[5] = *(datap+4);
+	checksum = checksum ^ data[5];
+	data[6] = *(datap+3);
+	checksum = checksum ^ data[6];
+	data[7] = *(datap+2);
+	checksum = checksum ^ data[7];
+	data[8] = *(datap+1);
+	checksum = checksum ^ data[8];
+	data[9] = *(datap+0);
+	checksum = checksum ^ data[9];
+	// range
+	data[10] = range;
+	checksum = checksum ^ data[10];
+	// mode
+	data[11] = mode;
+	checksum = checksum ^ data[11];
+	// checksum
+	data[12] = checksum;
 	
 	//TODO: Re-implement
 	/*
@@ -258,7 +282,7 @@ void SerialSend(double value, uint8_t mode, uint8_t range) {
 	// Old method
 	//sprintf(data, "%1.9lf\r\n", value);
 	
-	SerialSendArray((uint8_t*)data, 9);
+	SerialSendArray((uint8_t*)data, 13);
 	
 }
 
