@@ -189,6 +189,7 @@ void SerialSendArray(uint8_t *pData, uint16_t Size) {
 		while (doneFlag == 0) {
 			Delay(100);
 		}
+		/*
 		sprintf(string, "AT+CIPSEND=1,%d\r\n", Size);
 		SendString(string);
 		doneFlag = 0;
@@ -196,6 +197,7 @@ void SerialSendArray(uint8_t *pData, uint16_t Size) {
 		while (doneFlag == 0) {
 			Delay(100);
 		}
+		*/
 	}
 	else {
 		doneFlag = 0;
@@ -209,8 +211,9 @@ void SerialSendArray(uint8_t *pData, uint16_t Size) {
 
 void SerialSend(double value, uint8_t mode, uint8_t range) {
 	
-	char string[17];
+	uint8_t data[17] = {0};
 	char unit[2] = {'A', '\0'};
+	uint8_t *datap;
 	
 	switch (mode) {
 		case 0:
@@ -226,8 +229,22 @@ void SerialSend(double value, uint8_t mode, uint8_t range) {
 		break;
 	}
 	
-	sprintf(string, "%1.9lf\r\n", value);
+	// Serialise data
+	datap = (uint8_t*) &value;
 	
+	data[0] = *(datap+7); //0x3F;
+	data[1] = *(datap+6); //0xF0;
+	data[2] = *(datap+5); //0x00;
+	data[3] = *(datap+4); //0x00;
+	data[4] = *(datap+3); //0x00;
+	data[5] = *(datap+2); //0x00;
+	data[6] = *(datap+1); //0x00;
+	data[7] = *(datap+0); //0x00;
+	
+	data[8] = '\n';
+	//data[9] = '\0';
+	
+	//TODO: Re-implement
 	/*
 	if (range == 1) {
 		LCD_Write_At("m", 14, 0, 0);
@@ -238,7 +255,10 @@ void SerialSend(double value, uint8_t mode, uint8_t range) {
 	}
 	*/
 	
-	SerialSendArray((uint8_t*)string, strlen(string));
+	// Old method
+	//sprintf(data, "%1.9lf\r\n", value);
+	
+	SerialSendArray((uint8_t*)data, 9);
 	
 }
 
