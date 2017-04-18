@@ -10,8 +10,8 @@
       <TargetName>Target 1</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pArmCC>5060422::V5.06 update 4 (build 422)::ARMCC</pArmCC>
-      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
+      <pArmCC>5060183::V5.06 update 2 (build 183)::ARMCC</pArmCC>
+      <pCCUsed>5060183::V5.06 update 2 (build 183)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F407VGTx</Device>
@@ -437,6 +437,11 @@
               <FileName>lcd_driver.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\lcd_driver.c</FilePath>
+            </File>
+            <File>
+              <FileName>Defines.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Defines.h</FilePath>
             </File>
           </Files>
         </Group>

@@ -58,7 +58,7 @@ void Thread_System (void const *argument) {
 	// Ranging perameters
 	int range = 0; // lower = larger range / lower resolution (for Amps)
 
-	int mode = 0; // C, V, R, F, H
+	int mode = 0; // C, V, R, F, H, Hz
 	LED_Out(1);
 
 	
