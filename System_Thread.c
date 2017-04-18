@@ -119,6 +119,7 @@ void Thread_System (void const *argument) {
 		value = (value *16);
 		
 		value_calk = adcConv(mode, value, &range);
+		value_calk = movAvg(value_calk, mode, &range);
 		
 		// Set output based on range
 		switch (range) {
