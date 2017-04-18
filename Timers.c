@@ -3,6 +3,7 @@
 #include "stm32f4xx_hal_rcc.h"
 
 static TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
+static TIM_HandleTypeDef timer_Instance_4 = { .Instance = TIM5};
 static TIM_HandleTypeDef timer_Instance_2 = { .Instance = TIM3};
 static TIM_HandleTypeDef timer_Instance_3 = { .Instance = TIM4};
 
@@ -14,8 +15,9 @@ void Timer_Init(void) {
    // clockFreq/5000 is about right 
 	//TODO should probably check timer speed for accuracy
 	
+	// used for capacitance measurements
 	__TIM2_CLK_ENABLE();
-	timer_Instance_1.Init.Prescaler = clockFreq / 5000;
+	timer_Instance_1.Init.Prescaler = clockFreq / 500000;
 	timer_Instance_1.Init.CounterMode = TIM_COUNTERMODE_UP;
 	timer_Instance_1.Init.Period = 50000;
 	timer_Instance_1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -24,10 +26,22 @@ void Timer_Init(void) {
 	HAL_TIM_Base_Start(&timer_Instance_1);
 	HAL_TIM_Base_Start_IT(&timer_Instance_1);
 	
+	
+	__TIM5_CLK_ENABLE();
+	timer_Instance_4.Init.Prescaler = clockFreq / 5000;
+	timer_Instance_4.Init.CounterMode = TIM_COUNTERMODE_UP;
+	timer_Instance_4.Init.Period = 50000;
+	timer_Instance_4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	timer_Instance_4.Init.RepetitionCounter = 0;
+	HAL_TIM_Base_Init(&timer_Instance_4);
+	HAL_TIM_Base_Start(&timer_Instance_4);
+	HAL_TIM_Base_Start_IT(&timer_Instance_4);
+	
+	
 	__TIM4_CLK_ENABLE();
 	timer_Instance_3.Init.Prescaler = clockFreq/10000;
 	timer_Instance_3.Init.CounterMode = TIM_COUNTERMODE_UP;
-	timer_Instance_3.Init.Period = 10000;
+	timer_Instance_3.Init.Period = 1000;
 	timer_Instance_3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer_Instance_3.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance_3);
@@ -71,6 +85,9 @@ void Interrupt_Init(){
 	TIM2->DIER |= TIM_DIER_UIE;
 	NVIC_EnableIRQ(TIM2_IRQn);
 	
+	TIM5->DIER |= TIM_DIER_UIE;
+	NVIC_EnableIRQ(TIM5_IRQn);
+	
 	TIM4->DIER |= TIM_DIER_UIE;
 	NVIC_EnableIRQ(TIM4_IRQn);
 }
@@ -92,13 +109,16 @@ void TIM4_IRQHandler(void){
 
 //timer interrupt to reset the capacitance measurements if a timeout happens (5 seconds)
 void TIM2_IRQHandler(void){
-	capacitorState = 0;
 	TIM2->SR &= ~TIM_SR_UIF;
+}
+void TIM5_IRQHandler(void){
+	capacitorState = 0;
+	TIM5->SR &= ~TIM_SR_UIF;
 }
 
 // external interrupt to stop the timer:
 void EXTI4_IRQHandler(void){
 	
 	EXTI->PR |= 1 << 4;
-	HAL_TIM_Base_Stop(&timer_Instance_1);
+	HAL_TIM_Base_Stop(&timer_Instance_4);
 }

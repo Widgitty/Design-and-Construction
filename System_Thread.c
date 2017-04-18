@@ -52,7 +52,7 @@ void Thread_System (void const *argument) {
 	
 	uint32_t value = 0;
 	double value_calk = 0;
-	char unit[2] = {'A', '\0'};
+	char unit[3] = {'A',' ', '\0'};
 	
 	// Ranging perameters
 	int range = 0; // lower = larger range / lower resolution (for Amps)
@@ -76,32 +76,38 @@ void Thread_System (void const *argument) {
 			switch (mode) {
 				case 0:
 					unit[0] = 'A';
+					unit[1] = ' ';
 					LED_Out(1);
 					lcd_write_string("              ", 0,0);
 				break;
 				case 1:
 					unit[0] = 'V';
+					unit[1] = ' ';
 					LED_Out(2);
 					lcd_write_string("              ", 0,0);
 				break;
 				case 2:
 					unit[0] = (char)0xDE;
+					unit[1] = ' ';
 					LED_Out(4);
 					lcd_write_string("              ", 0,0);
 				break;
 				case 3:
 					unit[0] = 'F';
+					unit[1] = ' ';
 					LED_Out(8);
 					capacitorState = 0;
 					lcd_write_string("              ", 0,0);
 				break;
 				case 4: 
 					unit[0] = 'H';
+					unit[1] = ' ';
 					LED_Out(16);
 					lcd_write_string("              ", 0,0);
 				break;
 				case 5:
 					unit[0] = 'H';
+					unit[1] = 'z';
 					LED_Out(32);
 					lcd_write_string("              ", 0,0);
 				break;
@@ -133,34 +139,34 @@ void Thread_System (void const *argument) {
 			break;
 		}
 
-		sprintf(string, "%1.9lf", value_calk);
+		sprintf(string, "%1.3lf   ", value_calk);
 		lcd_write_string(string, 0, 0);
-		lcd_write_string(unit, 0, 15);
+		lcd_write_string(unit, 0, 14);
 		
 		switch(range)
 		{
 			case nano:
-				lcd_write_string("n", 0, 14);
+				lcd_write_string("n", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
 			case micro:
-				lcd_write_string("u", 0, 14);
+				lcd_write_string("u", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
 			case milli:
-				lcd_write_string("m", 0, 14);
+				lcd_write_string("m", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
 			case nothing:
-				lcd_write_string(" ", 0, 14);
+				lcd_write_string(" ", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
 			case kilo:
-				lcd_write_string("k", 0, 14);
+				lcd_write_string("k", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
 			case mega:
-				lcd_write_string("M", 0, 14);
+				lcd_write_string("M", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
 		}

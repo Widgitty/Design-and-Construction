@@ -8,6 +8,7 @@
 extern TIM_HandleTypeDef timer_Instance_1;
 extern TIM_HandleTypeDef timer_Instance_2;
 extern TIM_HandleTypeDef timer_Instance_3;
+extern TIM_HandleTypeDef timer_Instance_4;
 extern void Timer_Init(void);
 extern void Interrupt_Init(void);
 extern void EXTI4_IRQHandler(void);
