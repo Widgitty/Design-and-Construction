@@ -320,14 +320,14 @@ double movAvg(double avgIn, int mode, int *rangep){
 		}
 		
 		// RESISTANCE MODE - averaging conditions for the ohms range.
-		if(mode == 2 && *rangep == 0 && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
+		if(mode == 2 && *rangep == nothing && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// RESISTANCE MODE - averaging conditions for the kilohms range.
-		if(mode == 2 && *rangep == 1 && (avgIn > avgOut + 100 || avgIn < avgOut - 100)){
+		if(mode == 2 && *rangep == kilo && (avgIn > avgOut + 100 || avgIn < avgOut - 100)){
 			avgOut = avgIn;
 			restartCounter();
 				
