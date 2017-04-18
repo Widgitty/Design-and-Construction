@@ -19,6 +19,7 @@
 #include "Serial.h"
 #include "String.h"
 #include "lcd_driver.h"
+#include "Defines.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -56,10 +57,10 @@ void Thread_System (void const *argument) {
 	
 	// Ranging perameters
 	int range = 0; // lower = larger range / lower resolution (for Amps)
-	int mode = 0; // C, V, R
+
+	int mode = 0; // C, V, R, F, H
 	LED_Out(1);
 
-	
 	
 	GPIOD->ODR = 0;
 
@@ -68,6 +69,7 @@ void Thread_System (void const *argument) {
 
 		Delay(10);
 		
+
 		// this code is only executed if a button update happened (a button was pressed)
 		
 		if(buttonUpdate == 1){
@@ -78,6 +80,7 @@ void Thread_System (void const *argument) {
 		
 		if (modeUpdate == 1) {
 			modeUpdate = 0;
+
 			switch (mode) {
 				case 0:
 					unit[0] = 'A';
@@ -98,6 +101,16 @@ void Thread_System (void const *argument) {
 					unit[0] = 'F';
 					LED_Out(8);
 					capacitorState = 0;
+					lcd_write_string("              ", 0,0);
+				break;
+				case 4: 
+					unit[0] = 'H';
+					LED_Out(16);
+					lcd_write_string("              ", 0,0);
+				break;
+				case 5:
+					unit[0] = 'H';
+					LED_Out(32);
 					lcd_write_string("              ", 0,0);
 				break;
 				default:
@@ -133,13 +146,41 @@ void Thread_System (void const *argument) {
 		lcd_write_string(string, 0, 0);
 		lcd_write_string(unit, 0, 15);
 		
+		switch(range)
+		{
+			case nano:
+				lcd_write_string("n", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+			case micro:
+				lcd_write_string("u", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+			case milli:
+				lcd_write_string("m", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+			case nothing:
+				lcd_write_string(" ", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+			case kilo:
+				lcd_write_string("k", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+			case mega:
+				lcd_write_string("M", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+			break;
+		}
+		/*
 		if (range == 1) {
 			lcd_write_string("m", 0, 14);
 			sprintf(string, "%s m%s\r\n", string, unit);
 		} else {
 			lcd_write_string(" ", 0, 14);
 			sprintf(string, "%s %s\r\n", string, unit);
-		}
+		}*/
 
 		//SerialSend((uint8_t*)string, strlen(string));
 		SerialSend(value_calk, (uint8_t)mode, (uint8_t)range);
