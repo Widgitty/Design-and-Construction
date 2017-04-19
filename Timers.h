@@ -14,5 +14,6 @@ extern void Interrupt_Init(void);
 extern void EXTI4_IRQHandler(void);
 extern int capacitorState;
 extern int inductanceState;
+extern int frequencyState;
 
 #endif

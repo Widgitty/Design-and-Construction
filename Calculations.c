@@ -21,7 +21,7 @@ double capCalc(int *rangep);
 double inductanceCalc(int *rangep);
 void setTimerValue(int timer);
 double scaling(double output, int *rangep);
-double frequencyMeasure(int *rangep);
+double frequencyMeasure(int *rangep, int scale);
 
 TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
 TIM_HandleTypeDef timer_Instance_2 = { .Instance = TIM3};
@@ -65,7 +65,7 @@ double adcConv(int mode, double value, int *rangep){
 			output = inductanceCalc(rangep);
 			break;
 		case 5:
-			output = frequencyMeasure(rangep);
+			output = frequencyMeasure(rangep, 1);
 			break;
 		default:
 			output = 0.0;
@@ -167,6 +167,8 @@ double capCalc(int *rangep){
 		
 		return scaling(output, rangep);
 }
+
+// scaling function can take any input and will scale the value to a readable form
 double scaling(double output, int *rangep){
 	if(output < 0.000001){
 		*rangep = nano;
@@ -213,14 +215,16 @@ double inductanceCalc(int *rangep){
 	
 	if(inductanceState == 0)
 	{
-		HAL_TIM_Base_Stop(&timer_Instance_1);
-		__HAL_TIM_SET_COUNTER(&timer_Instance_1, 0);
-		HAL_TIM_Base_Start(&timer_Instance_1);
 		
 		// this is the pulse generating timer
 		HAL_TIM_Base_Start(&timer_Instance_3);
 		HAL_TIM_Base_Start_IT(&timer_Instance_3);
 		inductanceState = 1;
+		
+		// this timer is creating a timeout after 5 seconds
+		HAL_TIM_Base_Stop(&timer_Instance_4);
+		__HAL_TIM_SET_COUNTER(&timer_Instance_4, 0);
+		HAL_TIM_Base_Start(&timer_Instance_4);
 	}
 	else if(inductanceState == 1){
 		
@@ -235,8 +239,9 @@ double inductanceCalc(int *rangep){
 		
 		output = output*0.00001;
 			
+		output = frequencyMeasure(rangep,0);
+		
 		if(output != 0){
-			output = 1/output;
 			output = 1/(output*output*output_Modifier);
 			inductanceOld = output;
 		}
@@ -246,10 +251,16 @@ double inductanceCalc(int *rangep){
 		}
 		
 	}
+	else if(inductanceState == 2){
+		
+		// stop the timer
+		HAL_TIM_Base_Stop(&timer_Instance_3);
+		HAL_TIM_Base_Stop_IT(&timer_Instance_3);
+	}
 	
 	return scaling(output, rangep);
 }
-double frequencyMeasure(int *rangep){
+double frequencyMeasure(int *rangep, int scale){
 	
 	
 	double output = 0.0;
@@ -271,14 +282,20 @@ double frequencyMeasure(int *rangep){
 			output = 50000 + timerValueI - timerValueIOld;
 		}
 		
-		//stuff done based on milliseconds
+		//here is calculated the frequency, but not oer second, but per microsecond
 		// output is difference between timer values at this point.
 		
 		output = 1/output;
 		
-		output = output * 1000000;
-		
-		
+		// scaling to get actual frequency
+		output = output * frequencyScaler;
 	}
-	return scaling(output, rangep);
+	if(scale == 1){
+		return scaling(output, rangep);
+	}
+	else
+	{
+		return output;
+	}
+		
 }

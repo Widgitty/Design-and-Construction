@@ -103,12 +103,14 @@ void Thread_System (void const *argument) {
 					unit[0] = 'H';
 					unit[1] = ' ';
 					LED_Out(16);
+					inductanceState = 0;
 					lcd_write_string("              ", 0,0);
 				break;
 				case 5:
 					unit[0] = 'H';
 					unit[1] = 'z';
 					LED_Out(32);
+					frequencyState = 0;
 					lcd_write_string("              ", 0,0);
 				break;
 				default:
