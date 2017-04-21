@@ -7,27 +7,36 @@
 #include "GPIO.h"
 #include "stm32f4xx_hal_rcc.h"
 #include "Calculations.h"
+#include "Calibration.h"
 #include "Defines.h"
+#include "SWT.h"
 #define resistance 10000;
 #define capValue 0.000002;
 #define M_PI 3.14159265358979323846
+
+
 /* Utility class to perform mathematical operations such as ADC conversion */
 
 
 // Define function prototypes
-double currVoltCalc(int value, int *rangep, double scale);
-double adcConv(int mode, double value, int *rangep);
+double currVoltCalc(double value, int *rangep, int mode);
+double adcConv(int mode, double value, int *rangep, calibAdjustTypeDef *calibData);
 double capCalc(int *rangep);
 double inductanceCalc(int *rangep);
 void setTimerValue(int timer);
+void switchVoltRes(int mode, double volt_value);
 double scaling(double output, int *rangep);
 double frequencyMeasure(int *rangep);
 double movAvg(double output, int mode, int *rangep);
 void restartCounter(void);
+double m;
+double c;
+	
 
 TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
 TIM_HandleTypeDef timer_Instance_2 = { .Instance = TIM3};
 TIM_HandleTypeDef timer_Instance_3 = { .Instance = TIM4};
+calibAdjustTypeDef calib_Data[NUM_MODES];
 int capacitorState = 0;
 int inductanceState = 0;
 int frequencyState = 0;
@@ -38,6 +47,9 @@ double avgOut;
 int deltaMode = 0;
 double avgWaitTime = 0.0;
 
+
+
+
 // Initialise the counter instance.
 void restartCounter(void){
 	__HAL_TIM_SET_COUNTER(&timer_Instance_2, 0);
@@ -45,26 +57,30 @@ void restartCounter(void){
 }
 
 
-double adcConv(int mode, double value, int *rangep){
+double adcConv(int mode, double value, int *rangep, calibAdjustTypeDef *calibData){
 
 	double output;	// MODE dependant digital output. 
-	double inputCurrent = 3*pow(10,-6); // 3 microamp system input current - constant defined by hardware team
-
+	m = calibData[mode].multiplier;
+	c = calibData[mode].zeroOffset;
 	
 	switch(mode)
 	{
 		// CURRENT MODE - input value ranges from [0 to 3], output ranges from [-1 to 1]
 		case 0:
-			output = currVoltCalc(value, rangep, currentScale);
+			*rangep = milli;	
+			output = ((((double)value * m) + c));	
+			output = currVoltCalc(output, rangep, mode);
 			break;
 		// VOLTAGE MODE input - value ranges from [0 to 3], output ranges from [-10 to 10]
 		case 1:
-			output = currVoltCalc(value, rangep, voltageScale);
-			break;
+			*rangep = UNIT;	
+			output = ((((double)value * m) + c));	
+			output = currVoltCalc(output, rangep, mode);
+		  break;
 		// RESISTANCE MODE - Use ohms law to calculate R. 
 		case 2:
-			*rangep = nothing;
-			output = scaling((((double)value / (pow(2.0, 16.0)) * 3.3) / inputCurrent), rangep);	
+			*rangep = UNIT;
+			output = scaling(((((double)value * m) + c) / inputCurrent), rangep);	
 			break;
 		// CAPACITANCE MODE - Timer needs to be started.
 		case 3:
@@ -85,34 +101,42 @@ double adcConv(int mode, double value, int *rangep){
 }
 
 // Perform current and voltage range switching calculations.
-double currVoltCalc(int value, int *rangep, double scale){
-	//Configure range switching between unit volts and millivolts.
-	int maxRange = nothing;
-	int minRange = milli;
-	double output;
-	
-	output = (((double)value / (pow(2.0, 16.0)) * 3.3)-1.5) * scale;	
-	
-	//Range switching to milli occurs when output is between +/- 1 volt.
+double currVoltCalc(double output, int *rangep, int mode){
+	//Configure range switching between UNIT volts and millivolts.
+
+	//Range switching to milli occurs when output is between +/- 1.
 	if ((output > -1) && (output < 1)){
-		if (*rangep > minRange) {
+		if (*rangep != milli) {
 				*rangep = milli;
 		}
-		else {
-				//*rangep = 0;
-		}
+
 	}
 	else {
-	// If output is out side of +/- 1 volt convert back to unit volts.
-		if (*rangep < maxRange) {
-			*rangep = nothing;
-		}
-		else {
-				// TODO: Print error to LCD
+	// If output is outside of +/- 1 convert back to UNIT volts.
+		if (*rangep != UNIT) {
+			*rangep = UNIT;
 		}
 	}
+	
+	//Resolution switching to low occurs when output is outside +/- 10.
+	if (((output < -10) || (output > 10)) && mode == voltMode && *rangep == UNIT){
+		//Set range to lower resolution mode.
+		*rangep = UNIT30;
+	}
+	//Resolution switching to high occurs when output is inside +/- 10.
+	if ((output > -10) && (output < 10) && mode == voltMode && *rangep == UNIT30){
+		//Set range to lower resolution mode.
+		*rangep = UNIT;
+	}
+
+	
 	if(*rangep == milli){
 	output *= 1000;	
+	}
+	
+	if(*rangep == UNIT30){
+	output *= 3;
+			
 	}
 	
 	return output;
@@ -194,20 +218,21 @@ double scaling(double output, int *rangep){
 		*rangep = milli;
 		output = output * 1000;
 	}
-	else if(output > 1000)
-	{
-		*rangep = kilo;
-		output = output/1000;
-	}
 	else if(output > 1000000)
 	{
 		*rangep = mega;
 		output = output/1000000;
 	}
+	else if(output > 1000)
+	{
+		*rangep = kilo;
+		output = output/1000;
+	}
+
 	else
 	{
 		output = output;
-		*rangep = nothing;
+		*rangep = UNIT;
 	}
 	return output;
 }
@@ -306,28 +331,36 @@ double movAvg(double avgIn, int mode, int *rangep){
 		}
 		
 		// VOLTAGE MODE - averaging conditions for the volts range.
-		if(mode == 1 && *rangep == 0 && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
+		if(mode == 1 && *rangep == UNIT && (avgIn > avgOut + 0.1 || avgIn < avgOut - 0.1)){
+			avgOut = avgIn;
+			restartCounter();
+				
+		}
+		
+		// VOLTAGE MODE - averaging conditions for the 30 volts range.
+		if(mode == 1 && *rangep == UNIT30 && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// VOLTAGE MODE - averaging conditions for the millivolts range.
-		if(mode == 1 && *rangep == 1 && (avgIn > avgOut + 100 || avgIn < avgOut - 100)){
+		if(mode == 1 && *rangep == milli && (avgIn > avgOut + 10 || avgIn < avgOut - 10)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
+	
 		// RESISTANCE MODE - averaging conditions for the ohms range.
-		if(mode == 2 && *rangep == nothing && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
+		if(mode == 2 && *rangep == UNIT && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// RESISTANCE MODE - averaging conditions for the kilohms range.
-		if(mode == 2 && *rangep == kilo && (avgIn > avgOut + 100 || avgIn < avgOut - 100)){
+		if(mode == 2 && *rangep == kilo && (avgIn > avgOut + 10 || avgIn < avgOut - 10)){
 			avgOut = avgIn;
 			restartCounter();
 				
@@ -358,6 +391,7 @@ double movAvg(double avgIn, int mode, int *rangep){
 				avgOut = (aCoeff*avgOut + bCoeff*avgIn);
 			}
 	 }		
+	 
 
 	return avgOut;
 	

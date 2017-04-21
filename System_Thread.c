@@ -7,6 +7,7 @@
 #include "SWT.h"
 #include "RTE_Components.h"
 #include "ADC.h"
+#include "DAC.h"
 #include "math.h"
 #include "System_Init.h"
 #include "System_Thread.h"
@@ -65,6 +66,8 @@ void Thread_System (void const *argument) {
 	// Ranging perameters
 	int range = 0; // lower = larger range / lower resolution (for Amps)
 	int mode = 0; // C, V, R, F, H
+	LED_Out(0);
+	GPIO_Off(3);
 
 	
 	
@@ -126,12 +129,10 @@ void Thread_System (void const *argument) {
 		value = read_ADC1();
 		//value = (value *16);
 		
-		value_calk = adcConv(mode, value, &range);
+		value_calk = adcConv(mode, value, &range, calib_Data);
 		value_calk = movAvg(value_calk, mode, &range);
-
-		//value_calk = adcConv(mode, value, &range);
 		
-		value_calk = Calib_Conv_Test(mode, value, &range, calib_Data);
+		//value_calk = Calib_Conv_Test(mode, value, &range, calib_Data);
 
 		
 		// Set output based on range
@@ -165,9 +166,15 @@ void Thread_System (void const *argument) {
 				lcd_write_string("m", 0, 14);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
-			case nothing:
+			case UNIT:
 				lcd_write_string(" ", 0, 14);
 				sprintf(string, "%s m%s\r\n", string, unit);
+				GPIO_Off (3);
+			break;
+			case UNIT30:
+				lcd_write_string(" ", 0, 14);
+				sprintf(string, "%s m%s\r\n", string, unit);
+				GPIO_On (3);
 			break;
 			case kilo:
 				lcd_write_string("k", 0, 14);
@@ -194,6 +201,5 @@ void Thread_System (void const *argument) {
 		//SerialCheckMode(&mode);
 		
 		Check_Calibration_Flag(mode, range, calib_Data);
-		
 	}
 }
