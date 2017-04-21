@@ -2,11 +2,12 @@
 #include "GPIO.h"
 #include "stm32f4xx_hal_rcc.h"
 #include "Defines.h"
+#include "Calculations.h"
 
 static TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
-static TIM_HandleTypeDef timer_Instance_4 = { .Instance = TIM5};
 static TIM_HandleTypeDef timer_Instance_2 = { .Instance = TIM3};
 static TIM_HandleTypeDef timer_Instance_3 = { .Instance = TIM4};
+static TIM_HandleTypeDef timer_Instance_4 = { .Instance = TIM5};
 
 int on = 0;
 
@@ -17,39 +18,19 @@ void Timer_Init(void) {
 	//TODO should probably check timer speed for accuracy
 	
 	
-	// timer used for frequency measures and inductance
+	// timer used for frequency measurements
 	__TIM2_CLK_ENABLE();
-	timer_Instance_1.Init.Prescaler = clockFreq / prescalerXL;
+	timer_Instance_1.Init.Prescaler = clockFreq / prescalerM;
 	timer_Instance_1.Init.CounterMode = TIM_COUNTERMODE_UP;
-	timer_Instance_1.Init.Period = 50000;
+	timer_Instance_1.Init.Period = 40000;
 	timer_Instance_1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer_Instance_1.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance_1);
-	HAL_TIM_Base_Start(&timer_Instance_1);
-	HAL_TIM_Base_Start_IT(&timer_Instance_1);
+	//HAL_TIM_Base_Start(&timer_Instance_1);
+	//HAL_TIM_Base_Start_IT(&timer_Instance_1);
 	
 	
-	// used for capacitance measurements
-	__TIM5_CLK_ENABLE();
-	timer_Instance_4.Init.Prescaler = clockFreq / prescalerS;
-	timer_Instance_4.Init.CounterMode = TIM_COUNTERMODE_UP;
-	timer_Instance_4.Init.Period = periodL;
-	timer_Instance_4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-	timer_Instance_4.Init.RepetitionCounter = 0;
-	HAL_TIM_Base_Init(&timer_Instance_4);
-	HAL_TIM_Base_Start(&timer_Instance_4);
-	HAL_TIM_Base_Start_IT(&timer_Instance_4);
-	
-	// timer used for 
-	__TIM4_CLK_ENABLE();
-	timer_Instance_3.Init.Prescaler = clockFreq/prescalerM;
-	timer_Instance_3.Init.CounterMode = TIM_COUNTERMODE_UP;
-	timer_Instance_3.Init.Period = periodS;
-	timer_Instance_3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-	timer_Instance_3.Init.RepetitionCounter = 0;
-	HAL_TIM_Base_Init(&timer_Instance_3);
-	
-	
+	// timer used for averaging
 	__TIM3_CLK_ENABLE();
 	timer_Instance_2.Init.Prescaler = clockFreq / prescalerL;
 	timer_Instance_2.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -57,8 +38,28 @@ void Timer_Init(void) {
 	timer_Instance_2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer_Instance_2.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance_2);
-	HAL_TIM_Base_Start(&timer_Instance_2);
-	HAL_TIM_Base_Start_IT(&timer_Instance_2);
+	//HAL_TIM_Base_Start(&timer_Instance_2);
+	//HAL_TIM_Base_Start_IT(&timer_Instance_2);
+	
+	// timer used for pulse generation for inductance measurements
+	__TIM4_CLK_ENABLE();
+	timer_Instance_3.Init.Prescaler = clockFreq/500000;
+	timer_Instance_3.Init.CounterMode = TIM_COUNTERMODE_UP;
+	timer_Instance_3.Init.Period = 50000;
+	timer_Instance_3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	timer_Instance_3.Init.RepetitionCounter = 0;
+	HAL_TIM_Base_Init(&timer_Instance_3);
+	
+		// used for capacitance and inductance measurements
+	__TIM5_CLK_ENABLE();
+	timer_Instance_4.Init.Prescaler = clockFreq / prescalerS;
+	timer_Instance_4.Init.CounterMode = TIM_COUNTERMODE_UP;
+	timer_Instance_4.Init.Period = periodL;
+	timer_Instance_4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	timer_Instance_4.Init.RepetitionCounter = 0;
+	HAL_TIM_Base_Init(&timer_Instance_4);
+	//HAL_TIM_Base_Start(&timer_Instance_4);
+	//HAL_TIM_Base_Start_IT(&timer_Instance_4);	
 }
 
 void Interrupt_Init(){
@@ -108,12 +109,12 @@ void TIM4_IRQHandler(void){
 		on = 0;
 		GPIO_Off(3);
 	}
-	
 }
 
 //timer interrupt to reset the capacitance measurements if a timeout happens (5 seconds)
 void TIM2_IRQHandler(void){
 	TIM2->SR &= ~TIM_SR_UIF;
+	setOutput();
 }
 void TIM5_IRQHandler(void){
 	capacitorState = 0;

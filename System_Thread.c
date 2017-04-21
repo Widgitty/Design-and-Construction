@@ -26,6 +26,7 @@
 #define resistance 10000;
  
 static TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
+void resetTimersAndStates(void);
 
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
@@ -55,7 +56,8 @@ void Thread_System (void const *argument) {
 	char unit[3] = {'A',' ', '\0'};
 	
 	// Ranging perameters
-	int range = 0; // lower = larger range / lower resolution (for Amps)
+	// range defines the relay output, which is on when being on the milli range and also sets the LCD to show a certain value.
+	int range = nothing; 
 	int mode = 0; // C, V, R, F, H
 
 	
@@ -71,6 +73,7 @@ void Thread_System (void const *argument) {
 		// this code is only executed if a button update happened (a button was pressed)
 		
 		if(buttonUpdate == 1){
+			resetTimersAndStates();
 			buttonUpdate = 0;
 			mode = Get_Mode();
 			switch (mode) {
@@ -130,11 +133,11 @@ void Thread_System (void const *argument) {
 		
 		// Set output based on range
 		switch (range) {
-			case 0:
-				GPIO_Off(0);
-			break;
-			case 1:
+			case milli:
 				GPIO_On(0);
+			break;
+			case nothing:
+				GPIO_Off(0);
 			break;
 			default:
 				GPIO_Off(0); // Disconnect all inputs if possible
@@ -172,14 +175,6 @@ void Thread_System (void const *argument) {
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
 		}
-		/*
-		if (range == 1) {
-			lcd_write_string("m", 0, 14);
-			sprintf(string, "%s m%s\r\n", string, unit);
-		} else {
-			lcd_write_string(" ", 0, 14);
-			sprintf(string, "%s %s\r\n", string, unit);
-		}*/
 
 		SerialSend((uint8_t*)string, strlen(string), 1000);
 		
@@ -189,4 +184,17 @@ void Thread_System (void const *argument) {
 
 		
 	}
+}
+void resetTimersAndStates(void){
+	capacitorState = 0;
+	inductanceState = 0;
+	frequencyState = 0;
+	HAL_TIM_Base_Stop(&timer_Instance_1);
+	__HAL_TIM_SET_COUNTER(&timer_Instance_1, 0);
+	HAL_TIM_Base_Stop(&timer_Instance_2);
+	__HAL_TIM_SET_COUNTER(&timer_Instance_2, 0);
+	HAL_TIM_Base_Stop(&timer_Instance_3);
+	__HAL_TIM_SET_COUNTER(&timer_Instance_3, 0);
+	HAL_TIM_Base_Stop(&timer_Instance_4);
+	__HAL_TIM_SET_COUNTER(&timer_Instance_4, 0);
 }

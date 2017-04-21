@@ -3,5 +3,7 @@
 
 extern double adcConv(int mode, double value, int *range);
 void setTimerValue(int timer);
+void countUp(void);
+void setOutput(void);
 
 #endif

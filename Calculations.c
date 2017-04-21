@@ -22,6 +22,8 @@ double inductanceCalc(int *rangep);
 void setTimerValue(int timer);
 double scaling(double output, int *rangep);
 double frequencyMeasure(int *rangep, int scale);
+void countUp(void);
+void setOutput(void);
 
 TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
 TIM_HandleTypeDef timer_Instance_2 = { .Instance = TIM3};
@@ -30,9 +32,13 @@ TIM_HandleTypeDef timer_Instance_4 = { .Instance = TIM5};
 int capacitorState = 0;
 int inductanceState = 0;
 int frequencyState = 0;
+double counter = 0.0;
+double freqOut = 0.0;
+double prevOutput = 0.0;
 uint32_t timerValueI = 0;
 uint32_t timerValueIOld = 0;
 double inductanceOld = 0.0;
+int inductanceBreak = 0;
 
 
 double adcConv(int mode, double value, int *rangep){
@@ -132,7 +138,7 @@ double capCalc(int *rangep){
 			// should still take around 3 seconds to fully discharge
 			// 40000 are 4 seconds in this case
 			timerValue = __HAL_TIM_GET_COUNTER(&timer_Instance_4);
-			if(timerValue > 40000) 
+			if(timerValue > 20000) 
 			{
 				capacitorState = 2;
 			}
@@ -216,19 +222,21 @@ double inductanceCalc(int *rangep){
 	if(inductanceState == 0)
 	{
 		
+		//this timer measures the difference of the different intervals
+		HAL_TIM_Base_Start(&timer_Instance_1);
+		HAL_TIM_Base_Start_IT(&timer_Instance_1);
+		
 		// this is the pulse generating timer
 		HAL_TIM_Base_Start(&timer_Instance_3);
 		HAL_TIM_Base_Start_IT(&timer_Instance_3);
 		inductanceState = 1;
 		
-		// this timer is creating a timeout after 5 seconds
-		HAL_TIM_Base_Stop(&timer_Instance_4);
-		__HAL_TIM_SET_COUNTER(&timer_Instance_4, 0);
-		HAL_TIM_Base_Start(&timer_Instance_4);
+		
 	}
 	else if(inductanceState == 1){
 		
-		
+		NVIC_EnableIRQ(EXTI4_IRQn);
+		//calculates difference of two last timers
 		if(timerValueI > timerValueIOld){	
 			output = timerValueI - timerValueIOld;
 		}
@@ -237,13 +245,29 @@ double inductanceCalc(int *rangep){
 			output = 50000 + timerValueI - timerValueIOld;
 		}
 		
-		output = output*0.00001;
-			
-		output = frequencyMeasure(rangep,0);
+		
+		if(output < 10000)
+		{
+			// use updated version
+			// average it out
+			prevOutput = (output + prevOutput)/2;
+			output = prevOutput;
+		}
+		else
+		{
+			// indicates a long break, don't use updated version
+			// can also store there was a break, to count multiple steps later.
+			inductanceBreak = 1;
+			output = prevOutput;
+		}
+		
+		// gets frequency
+		// timer counts to 50000 every 0.05 seconds so that is equivalent of 
+		// counting to 1000000 every second.
+		output = 1000000.0/output;
 		
 		if(output != 0){
 			output = 1/(output*output*output_Modifier);
-			inductanceOld = output;
 		}
 		else
 		{
@@ -251,51 +275,34 @@ double inductanceCalc(int *rangep){
 		}
 		
 	}
-	else if(inductanceState == 2){
-		
-		// stop the timer
-		HAL_TIM_Base_Stop(&timer_Instance_3);
-		HAL_TIM_Base_Stop_IT(&timer_Instance_3);
-	}
 	
 	return scaling(output, rangep);
 }
+void countUp(void){
+	counter++;
+}
+void setOutput(void){
+	freqOut = counter/2;
+	counter = 0;
+}
 double frequencyMeasure(int *rangep, int scale){
 	
-	
-	double output = 0.0;
-	if(frequencyState == 0)
-	{
+	if(frequencyState == 0){
 		HAL_TIM_Base_Stop(&timer_Instance_1);
 		__HAL_TIM_SET_COUNTER(&timer_Instance_1, 0);
 		HAL_TIM_Base_Start(&timer_Instance_1);
 		frequencyState = 1;
 	}
-	
-	else if(frequencyState == 1){
-		if(timerValueI > timerValueIOld){	
-			output = timerValueI - timerValueIOld;
+	else if(frequencyState == 1){		
+		if(scale == 1){
+			return scaling(freqOut, rangep);
 		}
-		
 		else
 		{
-			output = 50000 + timerValueI - timerValueIOld;
+			return freqOut;
 		}
-		
-		//here is calculated the frequency, but not oer second, but per microsecond
-		// output is difference between timer values at this point.
-		
-		output = 1/output;
-		
-		// scaling to get actual frequency
-		output = output * frequencyScaler;
 	}
-	if(scale == 1){
-		return scaling(output, rangep);
-	}
-	else
-	{
-		return output;
-	}
-		
+	
+	return freqOut;
+
 }
