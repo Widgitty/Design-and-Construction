@@ -190,15 +190,15 @@ double scaling(double output, int *rangep){
 		*rangep = milli;
 		output = output * 1000;
 	}
-	else if(output > 1000)
-	{
-		*rangep = kilo;
-		output = output/1000;
-	}
 	else if(output > 1000000)
 	{
 		*rangep = mega;
 		output = output/1000000;
+	}
+	else if(output > 1000)
+	{
+		*rangep = kilo;
+		output = output/1000;
 	}
 	else
 	{
