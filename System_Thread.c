@@ -27,13 +27,16 @@
  
 static TIM_HandleTypeDef timer_Instance_1 = { .Instance = TIM2};
 void resetTimersAndStates(void);
+void getButtonUpdate(void);
 
 void Thread_System (void const *argument);                 // thread function
 osThreadId tid_Thread_System;                              // thread id
 // Thread priority set to high, as system thread should not be blockable
 osThreadDef(Thread_System, osPriorityHigh, 1, 0);        // thread object
 uint32_t buttonUpdate = 0;
-
+int mode = 0; // C, V, R, F, H
+char unit[3] = {'A',' ', '\0'};
+char string[17];
 int Init_Thread_System (void) {
   tid_Thread_System = osThreadCreate(osThread(Thread_System), NULL);
   if (!tid_Thread_System) return(-1);
@@ -43,22 +46,74 @@ int Init_Thread_System (void) {
 void Set_Button_Update(void){
 	buttonUpdate = 1;
 }
+void getButtonUpdate(void){
+	resetTimersAndStates();
+	buttonUpdate = 0;
+	mode = Get_Mode();
+	switch (mode) {
+		case 0:
+			unit[0] = 'A';
+			unit[1] = ' ';
+			LED_Out(1);
+			lcd_write_string("              ", 0,0);
+		break;
+		case 1:
+			unit[0] = 'V';
+			unit[1] = ' ';
+			LED_Out(2);
+			lcd_write_string("              ", 0,0);
+		break;
+		case 2:
+			unit[0] = (char)0xDE;
+			unit[1] = ' ';
+			LED_Out(4);
+			lcd_write_string("              ", 0,0);
+		break;
+		case 3:
+			unit[0] = 'F';
+			unit[1] = ' ';
+			LED_Out(8);
+			capacitorState = 0;
+			lcd_write_string("              ", 0,0);
+		break;
+		case 4: 
+			unit[0] = 'H';
+			unit[1] = ' ';
+			LED_Out(16);
+			inductanceState = 0;
+			lcd_write_string("              ", 0,0);
+		break;
+		case 5:
+			unit[0] = 'H';
+			unit[1] = 'z';
+			LED_Out(32);
+			frequencyState = 0;
+			lcd_write_string("              ", 0,0);
+		break;
+		default:
+			unit[0] = '/';
+			sprintf(string, "Undefined mode!");
+			lcd_write_string(string, 0,0);
+			Delay(1000);
+		break;
+	}
+}
 
 void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 	
-	char string[17];
+	
 	SerialInit();
 	SerialReceiveStart();
 	
 	uint32_t value = 0;
 	double value_calk = 0;
-	char unit[3] = {'A',' ', '\0'};
+	
 	
 	// Ranging perameters
 	// range defines the relay output, which is on when being on the milli range and also sets the LCD to show a certain value.
 	int range = nothing; 
-	int mode = 0; // C, V, R, F, H
+	
 
 	
 	
@@ -73,56 +128,8 @@ void Thread_System (void const *argument) {
 		// this code is only executed if a button update happened (a button was pressed)
 		
 		if(buttonUpdate == 1){
-			resetTimersAndStates();
-			buttonUpdate = 0;
-			mode = Get_Mode();
-			switch (mode) {
-				case 0:
-					unit[0] = 'A';
-					unit[1] = ' ';
-					LED_Out(1);
-					lcd_write_string("              ", 0,0);
-				break;
-				case 1:
-					unit[0] = 'V';
-					unit[1] = ' ';
-					LED_Out(2);
-					lcd_write_string("              ", 0,0);
-				break;
-				case 2:
-					unit[0] = (char)0xDE;
-					unit[1] = ' ';
-					LED_Out(4);
-					lcd_write_string("              ", 0,0);
-				break;
-				case 3:
-					unit[0] = 'F';
-					unit[1] = ' ';
-					LED_Out(8);
-					capacitorState = 0;
-					lcd_write_string("              ", 0,0);
-				break;
-				case 4: 
-					unit[0] = 'H';
-					unit[1] = ' ';
-					LED_Out(16);
-					inductanceState = 0;
-					lcd_write_string("              ", 0,0);
-				break;
-				case 5:
-					unit[0] = 'H';
-					unit[1] = 'z';
-					LED_Out(32);
-					frequencyState = 0;
-					lcd_write_string("              ", 0,0);
-				break;
-				default:
-					unit[0] = '/';
-					sprintf(string, "Undefined mode!");
-					lcd_write_string(string, 0,0);
-					Delay(1000);
-				break;
-			}
+			getButtonUpdate();
+			
 		}
 		
 		// Read ADC
