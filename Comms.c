@@ -10,6 +10,19 @@ int WiFi_Present = 0;
 int serialEnabled = 0;
 int WiFiEnabled = 0;
 
+
+//==================================================//
+//= Initialisation function for all communication  =//
+//==================================================//
+// - This function initialises the serial device, 	//
+//			then initialises the WiFi module only if		//
+//			it is present. Other communication modes		//
+//			can be added later (such as bluetooth) if		//
+//			needed.																			//
+// - This is a blocking function, but is only run		//
+//			on startup.																	//
+//==================================================//
+
 void Comms_Init() {
 	serialEnabled = Check_For_Serial();
 	if (serialEnabled == 1) {
@@ -42,6 +55,14 @@ void Comms_Init() {
 	}
 }
 
+
+//==================================================//
+//========== Send function for all comms  ==========//
+//==================================================//
+// - This function serialises data, and then calls 	//
+//			the appropriate send function depending on	//
+//			whether WiFi is enabled or not.							//
+//==================================================//
 
 void Comms_Send(double value, uint8_t mode, uint8_t range) {
 	uint8_t data[17] = {0};

@@ -10,15 +10,12 @@
 #include "stm32f4xx_hal_gpio.h"
 
 int handler = 0;
-uint8_t WiFiRXString[17];
+uint8_t WiFiRXString[64];
 int WiFiATResponse = 0;
 int WiFiRXIndex = 0;
-int WiFiATCheckMode = 0;
 
-void RXHandler (uint8_t ch);
+void RX_Handler (uint8_t ch);
 
-int WiFiRXState = 0;
-int WiFiStringPos = 0;
 char WiFiRXOut[17];
 int WiFiModeInt = 1;
 
@@ -30,8 +27,7 @@ void WiFiSendString(char* string) {
 int Check_For_WiFi() {
 	int i;
 	int ret = 0;
-	Register_RX_Handler(&RXHandler);
-	WiFiATCheckMode = 1;
+	Register_RX_Handler(&RX_Handler);
 	for (i=0; i<3; i++) { 
 		WiFiSendString("AT+RST\r\n");
 		Delay(100);
@@ -42,14 +38,12 @@ int Check_For_WiFi() {
 		}
 	}
 	Deregister_RX_Handler();
-	WiFiATCheckMode = 0;
 	return ret;
 }
 
 
 void WiFi_Init() {
-	Register_RX_Handler(&RXHandler);
-	WiFiATCheckMode = 1;
+	Register_RX_Handler(&RX_Handler);
 
 	int ret = 0;
 	WiFiATResponse = 0;
@@ -97,16 +91,16 @@ void WiFi_Init() {
 		WiFiATResponse = 0;
 	}
 	
+	sprintf(WiFiRXOut ,"");
 	//return(ret);
 	
 	//Deregister_RX_Handler();
-	WiFiATCheckMode = 0;
-	WiFiRXState = 4;
 }
 
 
 void WiFi_Send(uint8_t *pData, uint16_t Size) {	
 	char string[17];
+	//WiFiATCheckMode = 1;
 	sprintf(string, "AT+CIPSEND=0,%d\r\n", Size);
 	Serial_Send((uint8_t*)string, strlen(string));
 	Serial_Send(pData, Size);
@@ -118,6 +112,8 @@ void WiFi_Send(uint8_t *pData, uint16_t Size) {
 	Serial_Send(pData, Size);
 	*/
 	
+
+	/*
 	if (WiFiATResponse == 1) {
 		lcd_clear_display();
 		lcd_write_string("AT OK", 0, 0);
@@ -130,13 +126,15 @@ void WiFi_Send(uint8_t *pData, uint16_t Size) {
 		Delay(1000);
 		lcd_clear_display();
 	}
+	*/
+	//WiFiATCheckMode = 0;
 }
 
 
 void WiFi_Receive() {
 	if (strcmp(WiFiRXOut, "") != 0) {
 		char string[17];
-		sprintf(string, "Serial:");
+		sprintf(string, "WiFi:");
 		lcd_clear_display();
 		lcd_write_string(string, 0, 0);
 		sprintf(string, "%s", WiFiRXOut);
@@ -159,145 +157,55 @@ void WiFi_Check_Mode(int *mode) {
 
 
 
-
-
-
-
-
-
-
-void WiFi_AT_Check (uint8_t byte) {
-	int i = 0;
-	if (byte == '\r') {  // Ignore /r
-	
+void Check_String () {
+	if (strcmp((char*)WiFiRXString, "OK") == 0) {
+		WiFiATResponse = 1;
 	}
-	else if (byte == '\n') { // If new line
-		WiFiRXString[WiFiRXIndex] = 0;
-		if (strcmp((char*)WiFiRXString, "OK") == 0) {
-			WiFiATResponse = 1;
-		}
-		if (strcmp((char*)WiFiRXString, "ERROR") == 0) {
-			WiFiATResponse = 2;
-		}
-		WiFiRXIndex = 0;
-		for (i = 0; i < 17; i++) WiFiRXString[i] = 0; // Clear the string buffer
+	if (strcmp((char*)WiFiRXString, "ERROR") == 0) {
+		WiFiATResponse = 2;
 	}
-
-	else
-	{
-			WiFiRXString[WiFiRXIndex] = byte; // Add that character to the string
-			WiFiRXIndex++;
-			if (WiFiRXIndex >= 17) // User typing too much, we can't have commands that big
-			{
-					WiFiRXIndex = 0;
-					for (i = 0; i < 17; i++) WiFiRXString[i] = 0; // Clear the string buffer
-			}
-	}
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void RXHandler (uint8_t byte) {
-
-	if (WiFiATCheckMode == 1) {
-		WiFi_AT_Check (byte);
-	}
-	else {
-		char WiFiString[5];
-		sprintf(WiFiString, "+IPD");
-		
-		if (WiFiRXState == 0) { // Check what to expect
-			if (byte == 's') {
-				WiFiRXState = 1;
-			}
-			if (byte == 'm') {
-				WiFiRXState = 2;
-			} 
-		}
-		
-		else if (WiFiRXState == 1) { // expect string
-		
-			int i = 0;
-
-			if (byte == '\n' || byte == '\r') // If Enter
-			{
-				WiFiRXString[WiFiRXIndex] = 0;
-				sprintf(WiFiRXOut, "%s", WiFiRXString);
-				WiFiRXIndex = 0;
-				for (i = 0; i < 17; i++) WiFiRXString[i] = 0; // Clear the string buffer
-				
-				// String complete, go back to check
-				if (WiFiEnabled == 1)
-					WiFiRXState = 4;
-				else
-					WiFiRXState = 0;
-			}
-
-			else
-			{
-					WiFiRXString[WiFiRXIndex] = byte; // Add that character to the string
-					WiFiRXIndex++;
-					if (WiFiRXIndex >= 17) // User typing too much, we can't have commands that big
-					{
-							WiFiRXIndex = 0;
-							for (i = 0; i < 17; i++) WiFiRXString[i] = 0; // Clear the string buffer
-							if (WiFiEnabled == 1)
-								WiFiRXState = 4;
-							else
-								WiFiRXState = 0;
-							sprintf(WiFiRXOut, "String too long");
-					}
-			}
-		}
-		
-		else if (WiFiRXState == 2) { // Expect mode
-			if (((byte - '0') < 3) & (byte >= '0')){ // valid mode
+	if (strstr((char*)WiFiRXString, "+IPD") != NULL) {
+		// receive string from WiFi
+		if (WiFiRXString[9] == 'm') {
+			// handle mode change
+			uint8_t byte = WiFiRXString[10];
+			if (((byte - '0') < 6) & (byte >= '0')){ // valid mode
 				WiFiModeInt = (int) byte - '0';
 			}
-			// RX complete, go back to check
-			if (WiFiEnabled == 1)
-				WiFiRXState = 4;
-			else
-				WiFiRXState = 0;
 		}
-		
-		else if (WiFiRXState == 3) { // Check response to AT command
-			WiFiRXState = 0;
+		else if (WiFiRXString[9] == 's') {
+			// handle string
+			sprintf(WiFiRXOut, "%s", WiFiRXString+10);
 		}
-		
-		// Check for "+IPD" start condition from WiFi module
-		else if (WiFiRXState == 4) {
-			if (WiFiStringPos == 0) {
-				if (byte == WiFiString[0]) {
-					WiFiStringPos++;
-				}
-			}
-			else if (byte == WiFiString[WiFiStringPos]) {
-				WiFiStringPos++;
-			}
-			else {
-				WiFiStringPos = 0;
-			}
-			
-			if (WiFiStringPos >=3) {
-				WiFiRXState = 0;
-			}
+		else {
+			sprintf(WiFiRXOut, "Undefined ID %c", WiFiRXString[10]);
+		}
+
+	}
+}
+
+
+
+void RX_Handler (uint8_t byte) {
+	
+	// Receive string
+	if (byte == '\n' || byte == '\r') { // If Enter
+		WiFiRXString[WiFiRXIndex] = 0;
+		Check_String();
+		WiFiRXIndex = 0;
+		int i;
+		for (i = 0; i < sizeof(WiFiRXString); i++) WiFiRXString[i] = 0; // Clear the string buffer
+	}
+	else { // build string
+		WiFiRXString[WiFiRXIndex] = byte; // Add that character to the string
+		WiFiRXIndex++;
+		if (WiFiRXIndex >= sizeof(WiFiRXString)) // User typing too much, we can't have commands that big
+		{
+				WiFiRXIndex = 0;
+				int i;
+				for (i = 0; i < sizeof(WiFiRXString); i++) WiFiRXString[i] = 0; // Clear the string buffer
+				sprintf(WiFiRXOut, "String too long");
 		}
 	}
 }
+
