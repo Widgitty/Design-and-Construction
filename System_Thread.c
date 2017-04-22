@@ -129,7 +129,6 @@ void Thread_System (void const *argument) {
 		
 		if(buttonUpdate == 1){
 			getButtonUpdate();
-			
 		}
 		
 		// Read ADC
