@@ -34,10 +34,8 @@ int mode_Int = 0;
 
 int rxState = 0;
 
-int WiFiEnabled = 0;
-
-int ATResponse = 0;
-
+void (*RXHandlerCallback) (uint8_t);
+int RXHandlerRegistered = 0;
 
 
 //=====================================================//
@@ -58,87 +56,36 @@ void Error(int err) {
 	lcd_clear_display();
 }
 
-void SendString(char* string) {
+int Check_For_Serial() {
+	int state = 0;
+	// Enable clock
+	__HAL_RCC_GPIOA_CLK_ENABLE();	
 	
-	doneFlag = 0;
-	HAL_StatusTypeDef Ret = HAL_UART_Transmit_DMA(&UART_Handle, (uint8_t*)string, strlen(string));
-	while (doneFlag == 0) {
-		Delay(100);
-	}
-	Delay(100);
+	// Initialise GPIOs
+	GPIO_InitTypeDef GPIO_InitStructure;
+	GPIO_InitStructure.Pin = GPIO_PIN_3;
+	GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
+	GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
+	
+	state = HAL_GPIO_ReadPin(GPIOA, 3);
+	
+	// TODO: deinit GPIO?
+	
+	return 1;
 }
 
-int WiFiInit() {
-	rxState = 3; // Check for AT responses
-	int i = 0;
-	int ret = 1;
-	
-	for (i=0; i<3; i++) { 
-		SendString("AT+RST\r\n");
-		Delay(100);
-		//check response
-		if (ATResponse == 1) {
-			WiFiEnabled = 1;
-			ret = 0;
-			break;
-		}
-	}
-	ATResponse = 0;
-	
-	if (WiFiEnabled == 1) {
-		
-		// Set mode (1=station, 2=access point, 3=both)
-		SendString("AT+CWMODE=2\r\n");
-		if (ATResponse != 1)
-			ret = 1;
-		ATResponse = 0;
-		
-		// Set SSID, password, channel, encoding
-		// encoding: 0=open, 2=WPA_PSK, 3=WPA2_PSK, 4=WPA_WPA2_PSK
-		SendString("AT+CWSAP=\"MultiMeter\",\"123\",1,0\r\n");
-		if (ATResponse != 1)
-			ret = 1;
-		ATResponse = 0;
-		
-		// Set single (0) or multiple (1) connection mode
-		SendString("AT+CIPMUX=1\r\n");
-		if (ATResponse != 1)
-			ret = 1;
-		ATResponse = 0;
-		
-		// Enable or disable DHCP server
-		// <mode>,<enable>
-		// mode: 0=software aceess point, 1=station, 2=both
-		// enable: 0=enabled, 1=disabled
-		SendString("AT+CWDHCP=0,0\r\n");
-		if (ATResponse != 1)
-			ret = 1;
-		ATResponse = 0;
-		
-		// Set access point IP address
-		SendString("AT+CIPAP=\"192.168.1.1\"\r\n");
-		if (ATResponse != 1)
-			ret = 1;
-		ATResponse = 0;
-		
-		// Set server IP address and port
-		SendString("AT+CIPSERVER=1,1138\r\n");
-		if (ATResponse != 1)
-			ret = 1;
-		ATResponse = 0;
-	}
-	
-	return(ret);
+void Register_RX_Handler(void (*RXHandlerLocal) (uint8_t)) {
+	RXHandlerCallback = RXHandlerLocal;
+	RXHandlerRegistered = 1;
 }
 
-
-void SerialReceiveDump() {
-	// Start DMA recieve
-	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
-	//__HAL_DMA_ENABLE(&DMA_Rx_Handle);
-	rxState = 10;
-	HAL_UART_Receive_DMA(&UART_Handle, dumpBuffer, 100);
+void Deregister_RX_Handler() {
+	RXHandlerCallback = NULL;
+	RXHandlerRegistered = 0;
 }
+
 
 void SerialInit() {
 	HAL_StatusTypeDef Ret;
@@ -164,126 +111,19 @@ void SerialInit() {
 	SerialReceiveStart();
 	//SerialReceiveDump();
 	Delay(100);
-	if (WiFiInit() != 0) {
-		sprintf(rx_Out, "WiFi error");
-		WiFiEnabled = 0;
-		rxState = 0;
-	}
-	else {
-		rxState = 4;
-	}
+
+	rxState = 0;
 }
 
 
 // Blocking send for now, could be better implemented in the future
-void SerialSendArray(uint8_t *pData, uint16_t Size) {
+void Serial_Send(uint8_t *pData, uint16_t Size) {
 	HAL_StatusTypeDef Ret;
-	
-	// If in WiFI mode, send the data AT command
-	if (WiFiEnabled == 1) {
-		char string[17];
-		sprintf(string, "AT+CIPSEND=0,%d\r\n", Size);
-		SendString(string);
-		doneFlag = 0;
-		Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
-		while (doneFlag == 0) {
-			Delay(100);
-		}
-		/*
-		sprintf(string, "AT+CIPSEND=1,%d\r\n", Size);
-		SendString(string);
-		doneFlag = 0;
-		Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
-		while (doneFlag == 0) {
-			Delay(100);
-		}
-		*/
+	doneFlag = 0;
+	Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
+	while (doneFlag == 0) {
+		Delay(100);
 	}
-	else {
-		doneFlag = 0;
-		Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
-		while (doneFlag == 0) {
-			Delay(100);
-		}
-	}
-}
-
-
-void SerialSend(double value, uint8_t mode, uint8_t range) {
-	
-	uint8_t data[17] = {0};
-	char unit[2] = {'A', '\0'};
-	uint8_t *datap;
-	
-	switch (mode) {
-		case 0:
-			unit[0] = 'A';
-		break;
-		case 1:
-			unit[0] = 'V';
-		break;
-		case 2:
-			unit[0] = (char)0xDE;
-		break;
-		default:
-		break;
-	}
-	
-	uint8_t START_BYTE = 'D';
-	uint8_t checksum = 0x00;
-	datap = (uint8_t*) &value;
-	
-	// Serialise data
-	
-	// Build data packet
-	// start byte
-	data[0] = START_BYTE;
-	checksum = checksum ^ data[0];
-	// datatype (only '1' currently supported)
-	data[1] = '1';
-	checksum = checksum ^ data[1];
-	// data
-	data[2] = *(datap+7);
-	checksum = checksum ^ data[2];
-	data[3] = *(datap+6);
-	checksum = checksum ^ data[3];
-	data[4] = *(datap+5);
-	checksum = checksum ^ data[4];
-	data[5] = *(datap+4);
-	checksum = checksum ^ data[5];
-	data[6] = *(datap+3);
-	checksum = checksum ^ data[6];
-	data[7] = *(datap+2);
-	checksum = checksum ^ data[7];
-	data[8] = *(datap+1);
-	checksum = checksum ^ data[8];
-	data[9] = *(datap+0);
-	checksum = checksum ^ data[9];
-	// range
-	data[10] = range;
-	checksum = checksum ^ data[10];
-	// mode
-	data[11] = mode;
-	checksum = checksum ^ data[11];
-	// checksum
-	data[12] = checksum;
-	
-	//TODO: Re-implement
-	/*
-	if (range == 1) {
-		LCD_Write_At("m", 14, 0, 0);
-		sprintf(string, "%s m%s\r\n", string, unit);
-	} else {
-		LCD_Write_At(" ", 14, 0, 0);
-		sprintf(string, "%s %s\r\n", string, unit);
-	}
-	*/
-	
-	// Old method
-	//sprintf(data, "%1.9lf\r\n", value);
-	
-	SerialSendArray((uint8_t*)data, 13);
-	
 }
 
 
@@ -298,7 +138,7 @@ void SerialReceiveStart() {
 
 
 
-void SerialReceive() {
+void Serial_Receive() {
 	if (strcmp(rx_Out, "") != 0) {
 		char string[17];
 		sprintf(string, "Serial:");
@@ -313,7 +153,7 @@ void SerialReceive() {
 }
 
 
-void SerialCheckMode(int *mode) {
+void Serial_Check_Mode(int *mode) {
 	if (mode_Int != 10) {
 		*mode = mode_Int;
 		mode_Int = 10;
@@ -379,110 +219,61 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   __HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
 	
-	char WiFiString[5];
-	sprintf(WiFiString, "+IPD");
-	
-	if (rxState == 0) { // Check what to expect
-		if (rxBuffer == 's') {
-			rxState = 1;
-		}
-		if (rxBuffer == 'm') {
-			rxState = 2;
-		} 
+	if (RXHandlerRegistered == 1) {
+		RXHandlerCallback(rxBuffer);
 	}
-	
-	else if (rxState == 1) { // expect string
-	
-    int i = 0;
+	else {
+		
+		if (rxState == 0) { // Check what to expect
+			if (rxBuffer == 's') {
+				rxState = 1;
+			}
+			if (rxBuffer == 'm') {
+				rxState = 2;
+			} 
+		}
+		
+		else if (rxState == 1) { // expect string
+		
+			int i = 0;
 
-    if (rxBuffer == '\n' || rxBuffer == '\r') // If Enter
-    {
-			rxString[rxindex] = 0;
-			sprintf(rx_Out, "%s", rxString);
-			rxindex = 0;
-			for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
-			
-			// String complete, go back to check
-			if (WiFiEnabled == 1)
-				rxState = 4;
-			else
+			if (rxBuffer == '\n' || rxBuffer == '\r') // If Enter
+			{
+				rxString[rxindex] = 0;
+				sprintf(rx_Out, "%s", rxString);
+				rxindex = 0;
+				for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
+				
+				// String complete, go back to check
 				rxState = 0;
-    }
+			}
 
-    else
-    {
-        rxString[rxindex] = rxBuffer; // Add that character to the string
-        rxindex++;
-        if (rxindex >= 17) // User typing too much, we can't have commands that big
-        {
-            rxindex = 0;
-            for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
-						if (WiFiEnabled == 1)
-							rxState = 4;
-						else
+			else
+			{
+					rxString[rxindex] = rxBuffer; // Add that character to the string
+					rxindex++;
+					if (rxindex >= 17) // User typing too much, we can't have commands that big
+					{
+							rxindex = 0;
+							for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
 							rxState = 0;
-						sprintf(rx_Out, "String too long");
-        }
-    }
-	}
-	
-	else if (rxState == 2) { // Expect mode
-		if (((rxBuffer - '0') < 3) & (rxBuffer >= '0')){ // valid mode
-			mode_Int = (int) rxBuffer - '0';
+							sprintf(rx_Out, "String too long");
+					}
+			}
 		}
-		// RX complete, go back to check
-		if (WiFiEnabled == 1)
-			rxState = 4;
-		else
-			rxState = 0;
-	}
-	
-	else if (rxState == 3) { // Check response to AT command
-		int i = 0;
-		if (rxBuffer == '\r') {  // Ignore /r
 		
+		else if (rxState == 2) { // Expect mode
+			if (((rxBuffer - '0') < 3) & (rxBuffer >= '0')){ // valid mode
+				mode_Int = (int) rxBuffer - '0';
+			}
+			// RX complete, go back to check
+			rxState = 0;
 		}
-		else if (rxBuffer == '\n') { // If new line
-			rxString[rxindex] = 0;
-			if (strcmp((char*)rxString, "OK") == 0) {
-				ATResponse = 1;
-			}
-			if (strcmp((char*)rxString, "ERROR") == 0) {
-				ATResponse = 2;
-			}
-			rxindex = 0;
-			for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
-    }
+		
+		else if (rxState == 3) { // Check response to AT command
+			rxState = 0;
+		}
 
-    else
-    {
-        rxString[rxindex] = rxBuffer; // Add that character to the string
-        rxindex++;
-        if (rxindex >= 17) // User typing too much, we can't have commands that big
-        {
-            rxindex = 0;
-            for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
-						sprintf(rx_Out, "");
-        }
-    }
-	}
-	
-	else if (rxState == 4) {
-		if (pos == 0) {
-			if (rxBuffer == WiFiString[0]) {
-				pos++;
-			}
-		}
-		else if (rxBuffer == WiFiString[pos]) {
-			pos++;
-		}
-		else {
-			pos = 0;
-		}
-		
-		if (pos >=3) {
-			rxState = 0;
-		}
 	}
 	
 }

@@ -16,10 +16,10 @@
 #include "cmsis_os.h"
 #include "core_cm4.h"
 #include "Calculations.h"
-#include "Serial.h"
 #include "String.h"
 #include "lcd_driver.h"
 #include "Defines.h"
+#include "Comms.h"
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -48,8 +48,8 @@ void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 	
 	char string[17];
-	SerialInit();
-	SerialReceiveStart();
+	Comms_Init();
+	//SerialReceiveStart();
 	
 	uint32_t value = 0;
 	double value_calk = 0;
@@ -125,9 +125,10 @@ void Thread_System (void const *argument) {
 		
 		// Read ADC
 		value = read_ADC1();
-		value = (value *16);
+		//value = (value *16);
 		
-		value_calk = adcConv(mode, value, &range);
+		value_calk = value;
+		//value_calk = adcConv(mode, value, &range);
 		
 		// Set output based on range
 		switch (range) {
@@ -183,12 +184,12 @@ void Thread_System (void const *argument) {
 		}*/
 
 		//SerialSend((uint8_t*)string, strlen(string));
-		SerialSend(value_calk, (uint8_t)mode, (uint8_t)range);
+		Comms_Send(value_calk, (uint8_t)mode, (uint8_t)range);
 		
-		SerialReceive();
+		Comms_Receive();
 		
 		int modePrev = mode;
-		SerialCheckMode(&mode);
+		Comms_Check_Mode(&mode);
 		if (modePrev != mode)
 			modeUpdate = 1;
 		
