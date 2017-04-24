@@ -23,7 +23,7 @@
 
 // Define function prototypes
 double currVoltCalc(double value, int *rangep, int mode);
-double adcConv(int mode, double value, int *rangep, calibAdjustTypeDef *calibData);
+//double adcConv(int mode, uint32_t value, int *rangep, calibAdjustTypeDef *calibData);
 double capCalc(int *rangep);
 double inductanceCalc(int *rangep);
 void setTimerValue(int timer);
@@ -77,7 +77,7 @@ void restartCounter(void){
 }
 
 
-double adcConv(int mode, double value, int *rangep, calibAdjustTypeDef *calibData){
+double adcConv(int mode, uint32_t value, int *rangep, calibAdjustTypeDef *calibData){
 
 	double output;	// MODE dependant digital output. 
 	m = calibData[mode].multiplier;
@@ -96,8 +96,6 @@ double adcConv(int mode, double value, int *rangep, calibAdjustTypeDef *calibDat
 			*rangep = UNIT;	
 			output = ((((double)value * m) + c));	
 			output = currVoltCalc(output, rangep, mode);
-			if(output<0)
-				output = 1;
 		  break;
 		// RESISTANCE MODE - Use ohms law to calculate R. 
 		case 2:
@@ -373,21 +371,21 @@ double movAvg(double avgIn, int mode, int *rangep){
 		}
 		
 		// VOLTAGE MODE - averaging conditions for the volts range.
-		if(mode == 1 && *rangep == UNIT && (avgIn > avgOut + 0.1 || avgIn < avgOut - 0.1)){
+		else if(mode == 1 && *rangep == UNIT && (avgIn > avgOut + 0.1 || avgIn < avgOut - 0.1)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// VOLTAGE MODE - averaging conditions for the 30 volts range.
-		if(mode == 1 && *rangep == UNIT30 && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
+		else if(mode == 1 && *rangep == UNIT30 && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// VOLTAGE MODE - averaging conditions for the millivolts range.
-		if(mode == 1 && *rangep == milli && (avgIn > avgOut + 10 || avgIn < avgOut - 10)){
+		else if(mode == 1 && *rangep == milli && (avgIn > avgOut + 50 || avgIn < avgOut - 50)){
 			avgOut = avgIn;
 			restartCounter();
 				
@@ -395,17 +393,20 @@ double movAvg(double avgIn, int mode, int *rangep){
 		
 	
 		// RESISTANCE MODE - averaging conditions for the ohms range.
-		if(mode == 2 && *rangep == UNIT && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
+		else if(mode == 2 && *rangep == UNIT && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// RESISTANCE MODE - averaging conditions for the kilohms range.
-		if(mode == 2 && *rangep == kilo && (avgIn > avgOut + 10 || avgIn < avgOut - 10)){
+		else if(mode == 2 && *rangep == kilo && (avgIn > avgOut + 10 || avgIn < avgOut - 10)){
 			avgOut = avgIn;
 			restartCounter();
 				
+		}
+		else if ((mode != currMode) && (mode != voltMode) && (mode != resMode)){
+			avgOut = avgIn;
 		}
 	 
 		// Restart the counter if the mode is changed.

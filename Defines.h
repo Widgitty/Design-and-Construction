@@ -9,6 +9,7 @@
 #define currentScale 0.66
 #define voltageScale 6.66
 #define inputCurrent 0.000003
+
 #define currMode 0
 #define voltMode 1
 #define resMode 2
