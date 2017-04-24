@@ -18,8 +18,12 @@
 #include "LED.h"
 #include "LCD.h"
 #include "System_Thread.h"
+
 #include "Calculations.h"
 #include "Timers.h"
+
+#include "Calibration.h"
+
 
 const unsigned long SWT_mask[] = {1UL << 8, 1UL << 9, 1UL << 10, 1UL << 11, 1UL << 12, 1UL << 13, 1UL << 14, 1UL << 15};
 void init_swt_interrupt(void);
@@ -145,11 +149,17 @@ void Calc_Temp_Mode(void){
 		case 8:
 			temp_mode = 3;
 			break;
+
 		case 16:
 			temp_mode = 4;
 			break;
 		case 32:
 			temp_mode = 5;
+			break;
+
+		case 128:
+			Set_Calibration_Flag();
+
 			break;
 		default:
 			// nothing

@@ -7,6 +7,7 @@
 #include "SWT.h"
 #include "RTE_Components.h"
 #include "ADC.h"
+#include "DAC.h"
 #include "math.h"
 #include "System_Init.h"
 #include "System_Thread.h"
@@ -18,6 +19,7 @@
 #include "Calculations.h"
 #include "Serial.h"
 #include "String.h"
+#include "Calibration.h"
 #include "lcd_driver.h"
 #include "Defines.h"
 
@@ -99,21 +101,41 @@ void getButtonUpdate(void){
 	}
 }
 
+
+
 void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
+
+	char string[17];
+
+	//SerialInit();
+	//SerialReceiveStart();
+	
+	calibAdjustTypeDef calib_Data[NUM_MODES];
+	
+	Calibration_Init(calib_Data);
+	
 	
 	
 	SerialInit();
 	SerialReceiveStart();
+
 	
 	uint32_t value = 0;
 	double value_calk = 0;
 	
 	
 	// Ranging perameters
+
+ 
+	int mode = 0; // C, V, R, F, H
+	LED_Out(0);
+	GPIO_Off(3);
+ 
 	// range defines the relay output, which is on when being on the milli range and also sets the LCD to show a certain value.
-	int range = nothing; 
+	int range = UNIT; 
 	
+ 
 
 	
 	
@@ -122,27 +144,31 @@ void Thread_System (void const *argument) {
 
 	while (1) {
 		Delay(10);
-		
-		
-		
+	
+		mode = Get_Mode();
+
+
 		// this code is only executed if a button update happened (a button was pressed)
-		
 		if(buttonUpdate == 1){
 			getButtonUpdate();
 		}
 		
 		// Read ADC
 		value = read_ADC1();
-		value = (value *16);
+		//value = (value *16);
 		
-		value_calk = adcConv(mode, value, &range);
+		value_calk = adcConv(mode, value, &range, calib_Data);
+		value_calk = movAvg(value_calk, mode, &range);
+		
+		//value_calk = Calib_Conv_Test(mode, value, &range, calib_Data);
+
 		
 		// Set output based on range
 		switch (range) {
 			case milli:
 				GPIO_On(0);
 			break;
-			case nothing:
+			case UNIT:
 				GPIO_Off(0);
 			break;
 			default:
@@ -168,9 +194,18 @@ void Thread_System (void const *argument) {
 				lcd_write_string("m", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
-			case nothing:
+ 
+			case UNIT:
+				lcd_write_string(" ", 0, 13);
+ 
+ 
+				sprintf(string, "%s m%s\r\n", string, unit);
+				GPIO_Off (3);
+			break;
+			case UNIT30:
 				lcd_write_string(" ", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
+				GPIO_On (3);
 			break;
 			case kilo:
 				lcd_write_string("k", 0, 13);
@@ -182,13 +217,13 @@ void Thread_System (void const *argument) {
 			break;
 		}
 
-		SerialSend((uint8_t*)string, strlen(string), 1000);
+		//SerialSend((uint8_t*)string, strlen(string), 1000);
 		
-		SerialReceive();
+		//SerialReceive();
 		
-		SerialCheckMode(&mode);
-
+		//SerialCheckMode(&mode);
 		
+		Check_Calibration_Flag(mode, range, calib_Data);
 	}
 }
 void resetTimersAndStates(void){
