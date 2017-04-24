@@ -96,6 +96,8 @@ double adcConv(int mode, double value, int *rangep, calibAdjustTypeDef *calibDat
 			*rangep = UNIT;	
 			output = ((((double)value * m) + c));	
 			output = currVoltCalc(output, rangep, mode);
+			if(output<0)
+				output = 1;
 		  break;
 		// RESISTANCE MODE - Use ohms law to calculate R. 
 		case 2:
@@ -226,26 +228,26 @@ double capCalc(int *rangep){
 
 // scaling function can take any input and will scale the value to a readable form
 double scaling(double output, int *rangep){
-	if(output < 0.000001){
+	if((output < 0.000001)&& (output > -0.000001)){
 		*rangep = nano;
 		output = output * 1000000000;
 	}	
-	else if(output < 0.001)
+	else if((output < 0.001) && (output > -0.001))
 	{
 		*rangep = micro;
 		output = output * 1000000;
 	}
-	else if(output < 1)
+	else if((output < 1) && (output > -1))
 	{
 		*rangep = milli;
 		output = output * 1000;
 	}
-	else if(output > 1000000)
+	else if((output > 1000000)&& (output < -1000000))
 	{
 		*rangep = mega;
 		output = output/1000000;
 	}
-	else if(output > 1000)
+	else if((output > 1000) && (output < -1000))
 	{
 		*rangep = kilo;
 		output = output/1000;

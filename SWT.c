@@ -155,6 +155,7 @@ void Calc_Temp_Mode(void){
 			break;
 		case 32:
 			temp_mode = 5;
+			break;
 
 		case 128:
 			Set_Calibration_Flag();

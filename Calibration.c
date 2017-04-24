@@ -226,7 +226,7 @@ void Calibration_Factory_Reset(calibAdjustTypeDef *calib_Data) {
 	calib_Points[1].upperPointOut = 10;
 	
 	calib_Points[2].lowerPointIn = 0;
-	calib_Points[2].lowerPointOut = -3;
+	calib_Points[2].lowerPointOut = 0;
 	calib_Points[2].upperPointIn = 4095;
 	calib_Points[2].upperPointOut = 3;
 	

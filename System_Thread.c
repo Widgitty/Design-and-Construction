@@ -168,7 +168,7 @@ void Thread_System (void const *argument) {
 			case milli:
 				GPIO_On(0);
 			break;
-			case nothing:
+			case UNIT:
 				GPIO_Off(0);
 			break;
 			default:
@@ -196,14 +196,14 @@ void Thread_System (void const *argument) {
 			break;
  
 			case UNIT:
-				lcd_write_string(" ", 0, 14);
+				lcd_write_string(" ", 0, 13);
  
  
 				sprintf(string, "%s m%s\r\n", string, unit);
 				GPIO_Off (3);
 			break;
 			case UNIT30:
-				lcd_write_string(" ", 0, 14);
+				lcd_write_string(" ", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 				GPIO_On (3);
 			break;
