@@ -73,7 +73,7 @@ void lcd_write(int cmd, uint16_t byte, uint16_t time_delay) {
 	 *		0x----80-- = RS line high (screen will interpres as command)
 	 *		0x----40-- = Scrolling on
 	 *		0x----20-- = Scrolling off
-	 * bits 16-30: timer bits. Delays data transfer by this many milliseconds.
+	 * bits 16-30: timer bits. Delays data transfer by this many MILLIseconds.
 	 * bit 31: unused
 	*/
 	
@@ -169,7 +169,7 @@ void TIM6_DAC_IRQHandler(void) {
 				
 				/*Wait for time determined in command*/
 				if (buffer_data>>16) {
-					TIM6->PSC = 41000; /*Prescaler to tick every half millisecond*/
+					TIM6->PSC = 41000; /*Prescaler to tick every half MILLIsecond*/
 					TIM6->ARR = (buffer_data>>16) << 1; /*convert the time given in the command 
 																									word to a suitable number which corresponds to ms*/
 					TIM6->EGR = TIM_EGR_UG; /* Force register update in timer */

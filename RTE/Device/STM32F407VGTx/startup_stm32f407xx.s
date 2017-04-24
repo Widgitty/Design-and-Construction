@@ -1,4 +1,4 @@
-;******************** (C) COPYRIGHT 2016 STMicroelectronics ********************
+;******************** (C) COPYRIGHT 2016 STMICROelectronics ********************
 ;* File Name          : startup_stm32f407xx.s
 ;* Author             : MCD Application Team
 ;* Version            : V2.5.0
@@ -22,7 +22,7 @@
 ;*   2. Redistributions in binary form must reproduce the above copyright notice,
 ;*      this list of conditions and the following disclaimer in the documentation
 ;*      and/or other materials provided with the distribution.
-;*   3. Neither the name of STMicroelectronics nor the names of its contributors
+;*   3. Neither the name of STMICROelectronics nor the names of its contributors
 ;*      may be used to endorse or promote products derived from this software
 ;*      without specific prior written permission.
 ;*
@@ -437,4 +437,4 @@ __user_initial_stackheap
 
                  END
 
-;************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE*****
+;************************ (C) COPYRIGHT STMICROelectronics *****END OF FILE*****

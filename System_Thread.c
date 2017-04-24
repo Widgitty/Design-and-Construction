@@ -37,6 +37,7 @@ osThreadId tid_Thread_System;                              // thread id
 osThreadDef(Thread_System, osPriorityHigh, 1, 0);        // thread object
 uint32_t buttonUpdate = 0;
 int mode = 0; // C, V, R, F, H
+int muxRange = 0;
 char unit[3] = {'A',' ', '\0'};
 char string[17];
 int Init_Thread_System (void) {
@@ -132,7 +133,7 @@ void Thread_System (void const *argument) {
 	LED_Out(0);
 	GPIO_Off(3);
  
-	// range defines the relay output, which is on when being on the milli range and also sets the LCD to show a certain value.
+	// range defines the relay output, which is on when being on the MILLI range and also sets the LCD to show a certain value.
 	int range = UNIT; 
 	
  
@@ -158,14 +159,19 @@ void Thread_System (void const *argument) {
 		//value = (value *16);
 		
 		value_calk = adcConv(mode, value, &range, calib_Data);
+		
+		
+		
 		value_calk = movAvg(value_calk, mode, &range);
 		
 		//value_calk = Calib_Conv_Test(mode, value, &range, calib_Data);
 
 		
 		// Set output based on range
+		// !!!!!! this may do the same job as the mode muyxing atm
+		
 		switch (range) {
-			case milli:
+			case MILLI:
 				GPIO_On(0);
 			break;
 			case UNIT:
@@ -175,6 +181,8 @@ void Thread_System (void const *argument) {
 				GPIO_Off(0); // Disconnect all inputs if possible
 			break;
 		}
+		
+		
 
 		sprintf(string, "%1.3lf   ", value_calk);
 		lcd_write_string(string, 0, 0);
@@ -182,15 +190,15 @@ void Thread_System (void const *argument) {
 		
 		switch(range)
 		{
-			case nano:
+			case NANO:
 				lcd_write_string("n", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
-			case micro:
+			case MICRO:
 				lcd_write_string("u", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
-			case milli:
+			case MILLI:
 				lcd_write_string("m", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
@@ -207,11 +215,11 @@ void Thread_System (void const *argument) {
 				sprintf(string, "%s m%s\r\n", string, unit);
 				GPIO_On (3);
 			break;
-			case kilo:
+			case KILO:
 				lcd_write_string("k", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;
-			case mega:
+			case MEGA:
 				lcd_write_string("M", 0, 13);
 				sprintf(string, "%s m%s\r\n", string, unit);
 			break;

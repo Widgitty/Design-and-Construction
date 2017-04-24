@@ -20,7 +20,7 @@ void Timer_Init(void) {
 	
 	// timer used for frequency measurements
 	__TIM2_CLK_ENABLE();
-	timer_Instance_1.Init.Prescaler = clockFreq / prescalerM;
+	timer_Instance_1.Init.Prescaler = clockFreq / PRESCALERM;
 	timer_Instance_1.Init.CounterMode = TIM_COUNTERMODE_UP;
 	timer_Instance_1.Init.Period = 40000;
 	timer_Instance_1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -32,9 +32,9 @@ void Timer_Init(void) {
 	
 	// timer used for averaging
 	__TIM3_CLK_ENABLE();
-	timer_Instance_2.Init.Prescaler = clockFreq / prescalerL;
+	timer_Instance_2.Init.Prescaler = clockFreq / PRESCALERL;
 	timer_Instance_2.Init.CounterMode = TIM_COUNTERMODE_UP;
-	timer_Instance_2.Init.Period = periodL;
+	timer_Instance_2.Init.Period = PERIODL;
 	timer_Instance_2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer_Instance_2.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance_2);
@@ -52,9 +52,9 @@ void Timer_Init(void) {
 	
 		// used for capacitance and inductance measurements
 	__TIM5_CLK_ENABLE();
-	timer_Instance_4.Init.Prescaler = clockFreq / prescalerS;
+	timer_Instance_4.Init.Prescaler = clockFreq / PRESCALERS;
 	timer_Instance_4.Init.CounterMode = TIM_COUNTERMODE_UP;
-	timer_Instance_4.Init.Period = periodL;
+	timer_Instance_4.Init.Period = PERIODL;
 	timer_Instance_4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer_Instance_4.Init.RepetitionCounter = 0;
 	HAL_TIM_Base_Init(&timer_Instance_4);
