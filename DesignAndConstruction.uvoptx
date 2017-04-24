@@ -206,9 +206,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>73</LineNumber>
+          <LineNumber>246</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134239454</Address>
+          <Address>134250686</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -217,23 +217,7 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>.\Calculations.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\DesignAndConstruction\Calculations.c\73</Expression>
-        </Bp>
-        <Bp>
-          <Number>1</Number>
-          <Type>0</Type>
-          <LineNumber>74</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>0</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>0</BreakIfRCount>
-          <Filename>.\Calculations.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression></Expression>
+          <Expression>\\DesignAndConstruction\Calculations.c\246</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>

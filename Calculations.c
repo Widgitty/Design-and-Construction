@@ -226,26 +226,26 @@ double capCalc(int *rangep){
 
 // scaling function can take any input and will scale the value to a readable form
 double scaling(double output, int *rangep){
-	if((output < 0.000001)&& (output > -0.000001)){
+	if((output <= 0.000001)&& (output >= -0.000001)){
 		*rangep = nano;
 		output = output * 1000000000;
 	}	
-	else if((output < 0.001) && (output > -0.001))
+	else if((output <= 0.001) && (output >= -0.001))
 	{
 		*rangep = micro;
 		output = output * 1000000;
 	}
-	else if((output < 1) && (output > -1))
+	else if((output <= 1) && (output >= -1))
 	{
 		*rangep = milli;
 		output = output * 1000;
 	}
-	else if((output > 1000000)&& (output < -1000000))
+	else if((output >= 1000000) || (output <= -1000000))
 	{
 		*rangep = mega;
 		output = output/1000000;
 	}
-	else if((output > 1000) && (output < -1000))
+	else if((output >= 1000) || (output <= -1000))
 	{
 		*rangep = kilo;
 		output = output/1000;
@@ -405,6 +405,14 @@ double movAvg(double avgIn, int mode, int *rangep){
 			restartCounter();
 				
 		}
+		
+		// RESISTANCE MODE - averaging conditions for the megaohms range.
+		else if(mode == 2 && *rangep == mega && (avgIn > avgOut + 100 || avgIn < avgOut - 100)){
+			avgOut = avgIn;
+			restartCounter();
+				
+		}
+		
 		else if ((mode != currMode) && (mode != voltMode) && (mode != resMode)){
 			avgOut = avgIn;
 		}
