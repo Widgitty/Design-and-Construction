@@ -84,6 +84,8 @@ void restartCounter(void){
 void setMuxPins(double scaledValue){
 	// calculate mux output pin stuff
 	
+	
+	
 	if((scaledValue >= 1000) || (scaledValue <= -1000)){
 		scaleFactor = 10;
 		GPIO_Off(1);
@@ -99,7 +101,7 @@ void setMuxPins(double scaledValue){
 		GPIO_On(1);
 		GPIO_Off(2);
 	}
-	else if((scaledValue >= 1) || (scaledValue <= -1)){
+	else{
 		scaleFactor = 0.01;
 		GPIO_On(1);
 		GPIO_On(2);
