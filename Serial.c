@@ -25,7 +25,6 @@ uint8_t dumpBuffer[100];
 uint8_t rxString[17]; // where we build our string from characters coming in
 int rxindex = 0; // index for going though rxString
 
-int doneFlag = 0;
 int errorFlag = 0;
 
 char rx_Out[17];
@@ -36,6 +35,10 @@ int rxState = 0;
 
 void (*RXHandlerCallback) (uint8_t);
 int RXHandlerRegistered = 0;
+
+int serial_Busy = 0;
+
+uint8_t pData_Local[100];
 
 
 //=====================================================//
@@ -117,12 +120,30 @@ void SerialInit() {
 
 
 // Blocking send for now, could be better implemented in the future
-void Serial_Send(uint8_t *pData, uint16_t Size) {
-	HAL_StatusTypeDef Ret;
-	doneFlag = 0;
-	Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
-	while (doneFlag == 0) {
-		Delay(100);
+Serial_StatusTypeDef Serial_Send(uint8_t *pData, uint16_t Size) {
+	if (serial_Busy == 1) {
+		return SERIAL_BUSY;
+	}
+	else {
+		serial_Busy = 1;
+		
+		int i;
+		for (i=0; i<Size; i++) {
+			pData_Local[i] = pData[i];
+		}
+		//memcpy (pData_Local, pData, Size);
+		HAL_StatusTypeDef Ret;
+		Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData_Local, Size);
+		// Block for now
+		/*
+		while (serial_Busy == 1) {
+			Delay(100);
+		}
+		*/
+		if (Ret == HAL_OK)
+			return SERIAL_OK;
+		else
+			return SERIAL_ERROR;
 	}
 }
 
@@ -205,11 +226,10 @@ HAL_StatusTypeDef Custom_HAL_UART_AbortTransmit(UART_HandleTypeDef *huart)
 //=====================================================//
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-	doneFlag = 17;
+	serial_Busy = 0;
 	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
 	//HAL_UART_DMAStop(huart);
 	Custom_HAL_UART_AbortTransmit(huart);
-	
 }
 
 
@@ -288,6 +308,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 	lcd_write_string(string, 0,0);
 	Delay(5000);
 	lcd_clear_display();
+	serial_Busy = 0;
 }
 
 

@@ -18,9 +18,24 @@ void RX_Handler (uint8_t ch);
 
 char WiFiRXOut[17];
 int WiFiModeInt = 1;
+int dataQueued = 0;
+uint8_t dataQueue[100];
+uint16_t queueSize = 0;
 
-void WiFiSendString(char* string) {
+int WiFi_Busy = 0;
+
+void WiFi_Send_String(char* string) {
 	Serial_Send((uint8_t*)string, strlen(string));
+}
+
+
+void Queue_Data (uint8_t *pData, uint16_t Size) {
+	int i;
+	for (i=0; i<Size; i++) {
+		dataQueue[i] = pData[i];
+	}
+	queueSize = Size;
+	dataQueued = 1;
 }
 
 
@@ -29,7 +44,7 @@ int Check_For_WiFi() {
 	int ret = 0;
 	Register_RX_Handler(&RX_Handler);
 	for (i=0; i<3; i++) { 
-		WiFiSendString("AT+RST\r\n");
+		WiFi_Send_String("AT+RST\r\n");
 		Delay(100);
 		//check response
 		if (WiFiATResponse == 1) {
@@ -51,20 +66,29 @@ void WiFi_Init() {
 	if (WiFiEnabled == 1) {
 		
 		// Set mode (1=station, 2=access point, 3=both)
-		WiFiSendString("AT+CWMODE=2\r\n");
+		WiFi_Send_String("AT+CWMODE=2\r\n");
+		while (serial_Busy == 1) {
+			Delay(100);
+		}
 		if (WiFiATResponse != 1)
 			ret = 1;
 		WiFiATResponse = 0;
 		
 		// Set SSID, password, channel, encoding
 		// encoding: 0=open, 2=WPA_PSK, 3=WPA2_PSK, 4=WPA_WPA2_PSK
-		WiFiSendString("AT+CWSAP=\"MultiMeter\",\"123\",1,0\r\n");
+		WiFi_Send_String("AT+CWSAP=\"MultiMeter\",\"123\",1,0\r\n");
+		while (serial_Busy == 1) {
+			Delay(100);
+		}
 		if (WiFiATResponse != 1)
 			ret = 1;
 		WiFiATResponse = 0;
 		
 		// Set single (0) or multiple (1) connection mode
-		WiFiSendString("AT+CIPMUX=1\r\n");
+		WiFi_Send_String("AT+CIPMUX=1\r\n");
+		while (serial_Busy == 1) {
+			Delay(100);
+		}
 		if (WiFiATResponse != 1)
 			ret = 1;
 		WiFiATResponse = 0;
@@ -73,19 +97,28 @@ void WiFi_Init() {
 		// <mode>,<enable>
 		// mode: 0=software aceess point, 1=station, 2=both
 		// enable: 0=enabled, 1=disabled
-		WiFiSendString("AT+CWDHCP=0,0\r\n");
+		WiFi_Send_String("AT+CWDHCP=0,0\r\n");
+		while (serial_Busy == 1) {
+			Delay(100);
+		}
 		if (WiFiATResponse != 1)
 			ret = 1;
 		WiFiATResponse = 0;
 		
 		// Set access point IP address
-		WiFiSendString("AT+CIPAP=\"192.168.1.1\"\r\n");
+		WiFi_Send_String("AT+CIPAP=\"192.168.1.1\"\r\n");
+		while (serial_Busy == 1) {
+			Delay(100);
+		}
 		if (WiFiATResponse != 1)
 			ret = 1;
 		WiFiATResponse = 0;
 		
 		// Set server IP address and port
-		WiFiSendString("AT+CIPSERVER=1,1138\r\n");
+		WiFi_Send_String("AT+CIPSERVER=1,1138\r\n");
+		while (serial_Busy == 1) {
+			Delay(100);
+		}
 		if (WiFiATResponse != 1)
 			ret = 1;
 		WiFiATResponse = 0;
@@ -94,40 +127,103 @@ void WiFi_Init() {
 	sprintf(WiFiRXOut ,"");
 	//return(ret);
 	
+	Delay(5000);
+	
 	//Deregister_RX_Handler();
 }
 
 
 void WiFi_Send(uint8_t *pData, uint16_t Size) {	
-	char string[17];
-	//WiFiATCheckMode = 1;
-	sprintf(string, "AT+CIPSEND=0,%d\r\n", Size);
-	Serial_Send((uint8_t*)string, strlen(string));
-	Serial_Send(pData, Size);
+	if ((WiFi_Busy == 0) && (serial_Busy == 0)){
+		WiFiATResponse = 0;
+		Serial_StatusTypeDef Ret;
+		WiFi_Busy = 1;
+		char string[17];
+		Queue_Data(pData, Size);
+		sprintf(string, "AT+CIPSEND=0,%d\r\n", Size);
+		Ret = Serial_Send((uint8_t*)string, strlen(string));
+		
+		if (Ret == SERIAL_OK) {
+			/*
+			while (serial_Busy == 1) {
+				Delay(100);
+			}
+			*/
+		}
+	}
 	
-	// Uncomment for second connection support
-	/*
-	sprintf(string, "AT+CIPSEND=1,%d\r\n", Size);
-	Serial_Send((uint8_t*)string, strlen(string));
-	Serial_Send(pData, Size);
-	*/
-	
+//	if ((serial_Busy == 0) && (dataQueued == 0) && (WiFi_Busy == 0)) {
 
-	/*
-	if (WiFiATResponse == 1) {
-		lcd_clear_display();
-		lcd_write_string("AT OK", 0, 0);
-		Delay(1000);
-		lcd_clear_display();
-	}
-	if (WiFiATResponse == 2) {
-		lcd_clear_display();
-		lcd_write_string("AT ERROR", 0, 0);
-		Delay(1000);
-		lcd_clear_display();
-	}
-	*/
-	//WiFiATCheckMode = 0;
+//		WiFi_Busy = 1;
+//		char string[17];
+//		//WiFiATCheckMode = 1;
+//		Queue_Data(pData, Size);
+//		sprintf(string, "AT+CIPSEND=0,%d\r\n", Size);
+//		Serial_Send((uint8_t*)string, strlen(string));
+//		
+//		/*
+//		while (WiFi_Busy == 1) {
+//			Delay(100);
+//		}
+//		*/
+//		
+//		
+//		//Serial_Send(pData, Size);
+//		
+//		/*
+//		while (serial_Busy == 1) {
+//			Delay(100);
+//		}
+//		*/
+
+//		
+//		// Uncomment for second connection support
+//		/*
+//		sprintf(string, "AT+CIPSEND=1,%d\r\n", Size);
+//		Serial_Send((uint8_t*)string, strlen(string));
+//		Serial_Send(pData, Size);
+//		*/
+//		
+
+//		/*
+//		if (WiFiATResponse == 1) {
+//			lcd_clear_display();
+//			lcd_write_string("AT OK", 0, 0);
+//			Delay(1000);
+//			lcd_clear_display();
+//		}
+//		if (WiFiATResponse == 2) {
+//			lcd_clear_display();
+//			lcd_write_string("AT ERROR", 0, 0);
+//			Delay(1000);
+//			lcd_clear_display();
+//		}
+//		*/
+//	}
+//	if (serial_Busy == 1) {
+//		char string[17];
+//		sprintf(string, "Serial busy");
+//		lcd_clear_display();
+//		lcd_write_string(string, 0, 0);
+//		Delay(1000);
+//		lcd_clear_display();
+//	}
+//	if (WiFi_Busy == 1) {
+//		char string[17];
+//		sprintf(string, "WiFi busy");
+//		lcd_clear_display();
+//		lcd_write_string(string, 0, 0);
+//		Delay(1000);
+//		lcd_clear_display();
+//	}
+//	if (dataQueued == 1) {
+//		char string[17];
+//		sprintf(string, "Data queued");
+//		lcd_clear_display();
+//		lcd_write_string(string, 0, 0);
+//		Delay(1000);
+//		lcd_clear_display();
+//	}
 }
 
 
@@ -157,13 +253,12 @@ void WiFi_Check_Mode(int *mode) {
 
 
 
+
+
+
+
 void Check_String () {
-	if (strcmp((char*)WiFiRXString, "OK") == 0) {
-		WiFiATResponse = 1;
-	}
-	if (strcmp((char*)WiFiRXString, "ERROR") == 0) {
-		WiFiATResponse = 2;
-	}
+	
 	if (strstr((char*)WiFiRXString, "+IPD") != NULL) {
 		// receive string from WiFi
 		if (WiFiRXString[9] == 'm') {
@@ -181,6 +276,31 @@ void Check_String () {
 			sprintf(WiFiRXOut, "Undefined ID %c", WiFiRXString[10]);
 		}
 
+	}
+	
+	else if ((strstr((char*)WiFiRXString, "ERROR") != NULL) || (strstr((char*)WiFiRXString, "FAIL") != NULL)) {
+		WiFiATResponse = 2;
+		dataQueued = 0;
+		WiFi_Busy = 0;
+	}
+	
+	else if (strstr((char*)WiFiRXString, "OK") != NULL) {
+		WiFiATResponse = 1;
+		if (dataQueued == 1) {
+			WiFi_Busy = 1;
+			dataQueued = 0;
+			Serial_StatusTypeDef ret;
+			ret = Serial_Send(dataQueue, queueSize);
+			if (ret != SERIAL_OK) {
+				WiFi_Busy = 0;
+			}
+			else {
+				WiFi_Busy = 1;
+			}
+		}
+		else {
+			WiFi_Busy = 0;
+		}
 	}
 }
 
