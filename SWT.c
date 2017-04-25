@@ -118,7 +118,7 @@ void EXTI9_5_IRQHandler(void){
 			setTimerValue(__HAL_TIM_GET_COUNTER(&timer_Instance_3));
 		}
 	}
-	
+
 	
 	else if(GPIOE->IDR != 0x0000000C){
 		EXTI->PR |= 0xFFFF << 8;

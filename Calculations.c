@@ -39,6 +39,7 @@ uint32_t timerValueI = 0;
 uint32_t timerValueIOld = 0;
 double inductanceOld = 0.0;
 int inductanceBreak = 0;
+int resetInductance = 0;
 
 
 double adcConv(int mode, double value, int *rangep){
@@ -230,6 +231,7 @@ double inductanceCalc(int *rangep){
 		HAL_TIM_Base_Start(&timer_Instance_3);
 		HAL_TIM_Base_Start_IT(&timer_Instance_3);
 		inductanceState = 1;
+		prevOutput = 0.0;
 		
 		
 	}
@@ -238,33 +240,45 @@ double inductanceCalc(int *rangep){
 		NVIC_EnableIRQ(EXTI4_IRQn);
 		//calculates difference of two last timers
 		if(timerValueI > timerValueIOld){	
-			output = timerValueI - timerValueIOld;
+			output = (double)timerValueI - (double)timerValueIOld;
 		}
 		else
 		{
-			output = 50000 + timerValueI - timerValueIOld;
+			output = 50000.0 + (double)timerValueI - (double)timerValueIOld;
 		}
 		
 		
+		// 10000 is the equivalent of 10ms, if the signal length is above that it will be ignored.
+		// this is the equivalent of a 100Hz pulse and is enough to measure inductances up to about 1.1 Henries
+		// as the clock counts up to 1000000 every second it can in theory go up to 1MHz.
+		// of course this would only work if the count would be synced to the actual pulse, which is never happening.
 		if(output < 10000)
 		{
-			// use updated version
-			// average it out
-			prevOutput = (output + prevOutput)/2;
-			output = prevOutput;
-		}
+			if(output > prevOutput){
+				//output = output *1.1;
+				// use updated version
+				// average it out as well
+				prevOutput = output;
+				output = prevOutput;
+			}
+			else		
+			{
+				output = prevOutput;
+			}
+		}	
 		else
 		{
 			// indicates a long break, don't use updated version
 			// can also store there was a break, to count multiple steps later.
 			inductanceBreak = 1;
+			resetInductance = 1;
 			output = prevOutput;
 		}
 		
 		// gets frequency
 		// timer counts to 50000 every 0.05 seconds so that is equivalent of 
 		// counting to 1000000 every second.
-		output = 1000000.0/output;
+		output = 1000000/output;
 		
 		if(output != 0){
 			output = 1/(output*output*output_Modifier);
