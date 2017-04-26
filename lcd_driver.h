@@ -62,7 +62,7 @@ void lcd_move_cursor(uint16_t line, uint16_t offset);
 /* Sets scrolling on or off
  *
  * @param on: can be LCD_SCROLLING_ON or LCD_SCROLLING_OFF
- * @param ms: number of milliseconds between jumps. Lower 
+ * @param ms: number of MILLIseconds between jumps. Lower 
  * 		value will give faster scrolling. Try 300ms
  */
 void lcd_scrolling(int on, int ms);

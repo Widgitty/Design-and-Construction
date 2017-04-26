@@ -41,3 +41,4 @@ unsigned int read_ADC1 (void) {
 	return (ADC1->DR);
 }
 
+

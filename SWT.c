@@ -18,8 +18,13 @@
 #include "LED.h"
 #include "LCD.h"
 #include "System_Thread.h"
+#include "Defines.h"
+
 #include "Calculations.h"
 #include "Timers.h"
+
+#include "Calibration.h"
+
 
 const unsigned long SWT_mask[] = {1UL << 8, 1UL << 9, 1UL << 10, 1UL << 11, 1UL << 12, 1UL << 13, 1UL << 14, 1UL << 15};
 void init_swt_interrupt(void);
@@ -110,7 +115,13 @@ void EXTI9_5_IRQHandler(void){
 	if(a == 0x00000020)
 	{
 		EXTI->PR |= 1 << 5;
-		setTimerValue(__HAL_TIM_GET_COUNTER(&timer_Instance_1));
+		// counts up to calculate frequency
+		if(frequencyState == 1){
+			countUp();
+		}
+		else if(inductanceState == 1){
+			setTimerValue(__HAL_TIM_GET_COUNTER(&timer_Instance_3));
+		}
 	}
 	
 	
@@ -128,22 +139,43 @@ void Calc_Temp_Mode(void){
 	
 	switch(GPIOE_value){
 		case 1:
-			temp_mode = 0;
+			temp_mode = CURRMODE;
 			break;
 		case 2:
-			temp_mode = 1;
+			if(temp_mode == VOLTMODE){
+				temp_mode = RMS;
+			}
+			else{
+				temp_mode = VOLTMODE;
+			}
+			
 			break;
 		case 4:
-			temp_mode = 2;
+			if(temp_mode == CONTMODE){
+				temp_mode = DIODE;
+			}
+			else if(temp_mode == DIODE)
+			{
+				temp_mode = RESMODE;
+			}	
+			else
+			{
+				temp_mode = CONTMODE;
+			}	
 			break;
 		case 8:
-			temp_mode = 3;
+			temp_mode = CAPMODE;
 			break;
 		case 16:
-			temp_mode = 4;
+			temp_mode = INDMODE;
 			break;
 		case 32:
-			temp_mode = 5;
+			temp_mode = FREQMODE;
+			break;
+
+		case 128:
+			Set_Calibration_Flag();
+
 			break;
 		default:
 			// nothing
