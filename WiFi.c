@@ -17,7 +17,7 @@ int WiFiRXIndex = 0;
 void RX_Handler (uint8_t ch);
 
 char WiFiRXOut[17];
-int WiFiModeInt = 1;
+int WiFi_Mode_Int = -1;
 int dataQueued = 0;
 uint8_t dataQueue[100];
 uint16_t queueSize = 0;
@@ -160,9 +160,9 @@ void WiFi_Receive() {
 
 
 void WiFi_Check_Mode(int *mode) {
-	if (WiFiModeInt != 10) {
-		*mode = WiFiModeInt;
-		WiFiModeInt = 10;
+	if (WiFi_Mode_Int != -1) {
+		*mode = WiFi_Mode_Int;
+		WiFi_Mode_Int = -1;
 	}
 }
 
@@ -186,7 +186,7 @@ void Check_String () {
 			// handle mode change
 			uint8_t byte = WiFiRXString[10];
 			if (((byte - '0') < 6) & (byte >= '0')){ // valid mode
-				WiFiModeInt = (int) byte - '0';
+				WiFi_Mode_Int = (int) byte - '0';
 			}
 		}
 		else if (WiFiRXString[9] == 's') {

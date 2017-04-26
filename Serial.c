@@ -29,7 +29,7 @@ int errorFlag = 0;
 
 char rx_Out[17];
 
-int mode_Int = 0;
+int Serial_Mode_Int = -1;
 
 int rxState = 0;
 
@@ -175,9 +175,9 @@ void Serial_Receive() {
 
 
 void Serial_Check_Mode(int *mode) {
-	if (mode_Int != 10) {
-		*mode = mode_Int;
-		mode_Int = 10;
+	if (Serial_Mode_Int != -1) {
+		*mode = Serial_Mode_Int;
+		Serial_Mode_Int = -1;
 	}
 }
 
@@ -284,7 +284,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		
 		else if (rxState == 2) { // Expect mode
 			if (((rxBuffer - '0') < 3) & (rxBuffer >= '0')){ // valid mode
-				mode_Int = (int) rxBuffer - '0';
+				Serial_Mode_Int = (int) rxBuffer - '0';
 			}
 			// RX complete, go back to check
 			rxState = 0;
