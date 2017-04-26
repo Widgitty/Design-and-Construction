@@ -143,12 +143,9 @@ void Thread_System (void const *argument) {
 
 		Delay(10);
 
-		mode = Get_Mode();
-
 
 		// this code is only executed if a button update happened (a button was pressed)
 		if(buttonUpdate == 1){
-
 			buttonUpdate = 0;
 			mode = Get_Mode();
 			modeUpdate = 1;
@@ -284,13 +281,18 @@ void Thread_System (void const *argument) {
 		
 		int modePrev = mode;
 		Comms_Check_Mode(&mode);
-		if (modePrev != mode)
+		sprintf(string, "%d", mode);
+		lcd_write_string(string, 1, 13);
+		if (modePrev != mode) {
 			modeUpdate = 1;
+		}
 
 		
 		Check_Calibration_Flag(mode, range, calib_Data);
 	}
 }
+
+
 void resetTimersAndStates(void){
 	capacitorState = 0;
 	inductanceState = 0;
