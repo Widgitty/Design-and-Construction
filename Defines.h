@@ -20,6 +20,9 @@
 #define CAPMODE 3
 #define INDMODE 4
 #define FREQMODE 5
+#define CONTMODE 6
+#define RMS 7
+#define DIODE 8
 
 // different M_ultiplexing ranges.
 

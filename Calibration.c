@@ -217,17 +217,17 @@ void Calibration_Factory_Reset(calibAdjustTypeDef *calib_Data) {
 	
 	calib_Points[0].lowerPointIn = 0;
 	calib_Points[0].lowerPointOut = -1;
-	calib_Points[0].upperPointIn = 4095;
+	calib_Points[0].upperPointIn = 3723;
 	calib_Points[0].upperPointOut = 1;
 	
 	calib_Points[1].lowerPointIn = 0;
 	calib_Points[1].lowerPointOut = -10;
-	calib_Points[1].upperPointIn = 4095; // max raw ADC value
+	calib_Points[1].upperPointIn = 3723; // max raw ADC value
 	calib_Points[1].upperPointOut = 10;
 	
 	calib_Points[2].lowerPointIn = 0;
 	calib_Points[2].lowerPointOut = 0;
-	calib_Points[2].upperPointIn = 4095;
+	calib_Points[2].upperPointIn = 3723;
 	calib_Points[2].upperPointOut = 100000;
 	
 	Write_Calibration(calib_Points);

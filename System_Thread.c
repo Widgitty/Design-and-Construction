@@ -54,45 +54,56 @@ void getButtonUpdate(void){
 	buttonUpdate = 0;
 	mode = Get_Mode();
 	switch (mode) {
-		case 0:
+		case CURRMODE:
 			unit[0] = 'A';
 			unit[1] = ' ';
 			LED_Out(1);
-			lcd_write_string("              ", 0,0);
+			lcd_write_string("Current", 0,0);
 		break;
-		case 1:
+		case VOLTMODE:
 			unit[0] = 'V';
 			unit[1] = ' ';
 			LED_Out(2);
-			lcd_write_string("              ", 0,0);
+			lcd_write_string("Voltage", 0,0);
 		break;
-		case 2:
+		case RESMODE:
 			unit[0] = (char)0xDE;
 			unit[1] = ' ';
 			LED_Out(4);
-			lcd_write_string("              ", 0,0);
+			lcd_write_string("Resistance", 0,0);
 		break;
-		case 3:
+		case CAPMODE:
 			unit[0] = 'F';
 			unit[1] = ' ';
 			LED_Out(8);
 			capacitorState = 0;
-			lcd_write_string("              ", 0,0);
+			lcd_write_string("Capacitance", 0,0);
 		break;
-		case 4: 
+		case INDMODE: 
 			unit[0] = 'H';
 			unit[1] = ' ';
 			LED_Out(16);
 			inductanceState = 0;
-			lcd_write_string("              ", 0,0);
+			lcd_write_string("Inductance", 0,0);
 		break;
-		case 5:
+		case FREQMODE:
 			unit[0] = 'H';
 			unit[1] = 'z';
 			LED_Out(32);
 			frequencyState = 0;
-			lcd_write_string("              ", 0,0);
+			lcd_write_string("Frequency", 0,0);
 		break;
+		case DIODE:
+			LED_Out(4);
+			lcd_write_string("Diode mode", 0,0);
+			break;
+		case CONTMODE:
+			LED_Out(4);
+			lcd_write_string("Continuity mode", 0,0);
+			break;
+		case RMS:
+			lcd_write_string("Voltage RMS", 0,0);
+			break;
 		default:
 			unit[0] = '/';
 			sprintf(string, "Undefined mode!");
@@ -141,7 +152,7 @@ void Thread_System (void const *argument) {
 	
 	
 	GPIOD->ODR = 0;
-
+	getButtonUpdate();
 
 	while (1) {
 		Delay(10);
@@ -155,74 +166,80 @@ void Thread_System (void const *argument) {
 		}
 		
 		// Read ADC
+		Delay(10);
+		if(mode != CONTMODE && mode != DIODE){
 		value = read_ADC1();
-		//value = (value *16);
+			//value = (value *16);
+			
+			value_calk = adcConv(mode, value, &range, calib_Data);
+			
+			
+			
+			//value_calk = movAvg(value_calk, mode, &range);
+			
+			//value_calk = Calib_Conv_Test(mode, value, &range, calib_Data);
+
+			
+			// Set output based on range
+			// !!!!!! this may do the same job as the mode muyxing atm
+			
+			switch (range) {
+				case MILLI:
+					GPIO_On(0);
+				break;
+				case UNIT:
+					GPIO_Off(0);
+				break;
+				default:
+					GPIO_Off(0); // Disconnect all inputs if possible
+				break;
+			}
 		
-		value_calk = adcConv(mode, value, &range, calib_Data);
 		
-		
-		
-		//value_calk = movAvg(value_calk, mode, &range);
-		
-		//value_calk = Calib_Conv_Test(mode, value, &range, calib_Data);
 
 		
-		// Set output based on range
-		// !!!!!! this may do the same job as the mode muyxing atm
-		
-		switch (range) {
-			case MILLI:
-				GPIO_On(0);
-			break;
-			case UNIT:
-				GPIO_Off(0);
-			break;
-			default:
-				GPIO_Off(0); // Disconnect all inputs if possible
-			break;
-		}
+			
+			sprintf(string, "%1.3lf   ", value_calk);
+			lcd_write_string(string, 1, 0);
+			lcd_write_string(unit, 1, 14);
 		
 		
-
-		sprintf(string, "%1.3lf   ", value_calk);
-		lcd_write_string(string, 0, 0);
-		lcd_write_string(unit, 0, 14);
-		
-		switch(range)
-		{
-			case NANO:
-				lcd_write_string("n", 0, 13);
-				sprintf(string, "%s m%s\r\n", string, unit);
-			break;
-			case MICRO:
-				lcd_write_string("u", 0, 13);
-				sprintf(string, "%s m%s\r\n", string, unit);
-			break;
-			case MILLI:
-				lcd_write_string("m", 0, 13);
-				sprintf(string, "%s m%s\r\n", string, unit);
-			break;
- 
-			case UNIT:
-				lcd_write_string(" ", 0, 13);
- 
- 
-				sprintf(string, "%s m%s\r\n", string, unit);
-				GPIO_Off (3);
-			break;
-			case UNIT30:
-				lcd_write_string(" ", 0, 13);
-				sprintf(string, "%s m%s\r\n", string, unit);
-				GPIO_On (3);
-			break;
-			case KILO:
-				lcd_write_string("k", 0, 13);
-				sprintf(string, "%s m%s\r\n", string, unit);
-			break;
-			case MEGA:
-				lcd_write_string("M", 0, 13);
-				sprintf(string, "%s m%s\r\n", string, unit);
-			break;
+			switch(range)
+			{
+				case NANO:
+					lcd_write_string("n", 1, 13);
+					sprintf(string, "%s m%s\r\n", string, unit);
+				break;
+				case MICRO:
+					lcd_write_string("u", 1, 13);
+					sprintf(string, "%s m%s\r\n", string, unit);
+				break;
+				case MILLI:
+					lcd_write_string("m", 1, 13);
+					sprintf(string, "%s m%s\r\n", string, unit);
+				break;
+	 
+				case UNIT:
+					lcd_write_string(" ", 1, 13);
+	 
+	 
+					sprintf(string, "%s m%s\r\n", string, unit);
+					GPIO_Off (3);
+				break;
+				case UNIT30:
+					lcd_write_string(" ", 1, 13);
+					sprintf(string, "%s m%s\r\n", string, unit);
+					GPIO_On (3);
+				break;
+				case KILO:
+					lcd_write_string("k", 1, 13);
+					sprintf(string, "%s m%s\r\n", string, unit);
+				break;
+				case MEGA:
+					lcd_write_string("M", 1, 13);
+					sprintf(string, "%s m%s\r\n", string, unit);
+				break;
+			}
 		}
 
 		//SerialSend((uint8_t*)string, strlen(string), 1000);
@@ -235,6 +252,8 @@ void Thread_System (void const *argument) {
 	}
 }
 void resetTimersAndStates(void){
+	lcd_write_string("                ", 0,0);
+	lcd_write_string("                ", 1,0);
 	capacitorState = 0;
 	inductanceState = 0;
 	frequencyState = 0;

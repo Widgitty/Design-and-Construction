@@ -107,6 +107,17 @@ void setMuxPins(double scaledValue){
 		GPIO_On(2);
 	}
 }
+
+
+//void setMuxPins(double scaledValue){
+//	// calculate mux output pin stuff
+//	
+//	scaleFactor = 0.1;
+//	GPIO_On(1);
+//	GPIO_Off(2);
+
+//}
+
 double adcConv(int mode, uint32_t value, int *rangep, calibAdjustTypeDef *calibData){
 	
 	double output;	// MODE dependant digital output. 	
