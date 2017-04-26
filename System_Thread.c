@@ -23,6 +23,7 @@
 #include "Defines.h"
 #include "Comms.h"
 
+
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
 #define resistance 10000;
