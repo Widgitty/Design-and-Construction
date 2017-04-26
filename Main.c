@@ -9,6 +9,7 @@
 #include "LED.h"
 #include "SWT.h"
 #include "ADC.h"
+#include "DAC.h"
 #include "GPIO.h"
 #include "Timers.h"
 #include "lcd_driver.h"
@@ -33,6 +34,7 @@ int main (void) {
   LED_Init();
   SWT_Init();
 	ADC1_Init();
+	DAC_Init();
 	GPIO_Init();
 	Timer_Init();
 	Interrupt_Init();
