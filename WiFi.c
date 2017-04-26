@@ -38,7 +38,7 @@ void Queue_Data (uint8_t *pData, uint16_t Size) {
 	dataQueued = 1;
 }
 
-
+// Blocking function, but only for init
 int Check_For_WiFi() {
 	int i;
 	int ret = 0;
@@ -56,8 +56,8 @@ int Check_For_WiFi() {
 	return ret;
 }
 
-
-void WiFi_Init() {
+// Blocking function, but only for init
+int WiFi_Init() {
 	Register_RX_Handler(&RX_Handler);
 
 	int ret = 0;
@@ -125,105 +125,22 @@ void WiFi_Init() {
 	}
 	
 	sprintf(WiFiRXOut ,"");
-	//return(ret);
-	
-	Delay(5000);
 	
 	//Deregister_RX_Handler();
+	return(ret);
 }
 
 
 void WiFi_Send(uint8_t *pData, uint16_t Size) {	
 	if ((WiFi_Busy == 0) && (serial_Busy == 0)){
 		WiFiATResponse = 0;
-		Serial_StatusTypeDef Ret;
+		//Serial_StatusTypeDef ret;
 		WiFi_Busy = 1;
 		char string[17];
 		Queue_Data(pData, Size);
 		sprintf(string, "AT+CIPSEND=0,%d\r\n", Size);
-		Ret = Serial_Send((uint8_t*)string, strlen(string));
-		
-		if (Ret == SERIAL_OK) {
-			/*
-			while (serial_Busy == 1) {
-				Delay(100);
-			}
-			*/
-		}
+		Serial_Send((uint8_t*)string, strlen(string));
 	}
-	
-//	if ((serial_Busy == 0) && (dataQueued == 0) && (WiFi_Busy == 0)) {
-
-//		WiFi_Busy = 1;
-//		char string[17];
-//		//WiFiATCheckMode = 1;
-//		Queue_Data(pData, Size);
-//		sprintf(string, "AT+CIPSEND=0,%d\r\n", Size);
-//		Serial_Send((uint8_t*)string, strlen(string));
-//		
-//		/*
-//		while (WiFi_Busy == 1) {
-//			Delay(100);
-//		}
-//		*/
-//		
-//		
-//		//Serial_Send(pData, Size);
-//		
-//		/*
-//		while (serial_Busy == 1) {
-//			Delay(100);
-//		}
-//		*/
-
-//		
-//		// Uncomment for second connection support
-//		/*
-//		sprintf(string, "AT+CIPSEND=1,%d\r\n", Size);
-//		Serial_Send((uint8_t*)string, strlen(string));
-//		Serial_Send(pData, Size);
-//		*/
-//		
-
-//		/*
-//		if (WiFiATResponse == 1) {
-//			lcd_clear_display();
-//			lcd_write_string("AT OK", 0, 0);
-//			Delay(1000);
-//			lcd_clear_display();
-//		}
-//		if (WiFiATResponse == 2) {
-//			lcd_clear_display();
-//			lcd_write_string("AT ERROR", 0, 0);
-//			Delay(1000);
-//			lcd_clear_display();
-//		}
-//		*/
-//	}
-//	if (serial_Busy == 1) {
-//		char string[17];
-//		sprintf(string, "Serial busy");
-//		lcd_clear_display();
-//		lcd_write_string(string, 0, 0);
-//		Delay(1000);
-//		lcd_clear_display();
-//	}
-//	if (WiFi_Busy == 1) {
-//		char string[17];
-//		sprintf(string, "WiFi busy");
-//		lcd_clear_display();
-//		lcd_write_string(string, 0, 0);
-//		Delay(1000);
-//		lcd_clear_display();
-//	}
-//	if (dataQueued == 1) {
-//		char string[17];
-//		sprintf(string, "Data queued");
-//		lcd_clear_display();
-//		lcd_write_string(string, 0, 0);
-//		Delay(1000);
-//		lcd_clear_display();
-//	}
 }
 
 
@@ -248,6 +165,10 @@ void WiFi_Check_Mode(int *mode) {
 		WiFiModeInt = 10;
 	}
 }
+
+
+
+
 
 
 

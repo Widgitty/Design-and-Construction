@@ -7,7 +7,7 @@
 extern int WiFiEnabled;
 
 extern int Check_For_WiFi(void);
-extern void WiFi_Init(void);
+extern int WiFi_Init(void);
 
 extern void WiFi_Send(uint8_t *pData, uint16_t Size);
 extern void WiFi_Receive(void);

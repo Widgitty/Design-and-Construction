@@ -30,7 +30,17 @@ void Comms_Init() {
 		SerialReceiveStart();
 		WiFiEnabled = Check_For_WiFi();
 		if (WiFiEnabled == 1) {
-			WiFi_Init();
+			int i;
+			int ret;
+			for (i=0; i<3; i++) {
+				ret = WiFi_Init();
+				if (ret == 1) {
+					break;
+				}
+				else {
+					WiFiEnabled = 0;
+				}
+			}
 		}
 
 		// Debug, print selected mode
@@ -62,6 +72,7 @@ void Comms_Init() {
 // - This function serialises data, and then calls 	//
 //			the appropriate send function depending on	//
 //			whether WiFi is enabled or not.							//
+// - This is a non-blocking function								//
 //==================================================//
 
 void Comms_Send(double value, uint8_t mode, uint8_t range) {

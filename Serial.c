@@ -60,21 +60,21 @@ void Error(int err) {
 }
 
 int Check_For_Serial() {
-	int state = 0;
-	// Enable clock
-	__HAL_RCC_GPIOA_CLK_ENABLE();	
-	
-	// Initialise GPIOs
-	GPIO_InitTypeDef GPIO_InitStructure;
-	GPIO_InitStructure.Pin = GPIO_PIN_3;
-	GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
-	GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
-	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
-	
-	state = HAL_GPIO_ReadPin(GPIOA, 3);
-	
-	// TODO: deinit GPIO?
+//	int state = 0;
+//	// Enable clock
+//	__HAL_RCC_GPIOA_CLK_ENABLE();	
+//	
+//	// Initialise GPIOs
+//	GPIO_InitTypeDef GPIO_InitStructure;
+//	GPIO_InitStructure.Pin = GPIO_PIN_3;
+//	GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
+//	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
+//	GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
+//	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
+//	
+//	state = HAL_GPIO_ReadPin(GPIOA, 3);
+//	
+//	// TODO: deinit GPIO?
 	
 	return 1;
 }
