@@ -23,15 +23,24 @@ UART_HandleTypeDef UART_Handle;
 DMA_HandleTypeDef DMA_Rx_Handle;
 DMA_HandleTypeDef DMA_Tx_Handle;
 uint8_t rxBuffer = '\000';
-uint8_t rxString[100]; // where we build our string from characters coming in
+uint8_t dumpBuffer[100];
+uint8_t rxString[17]; // where we build our string from characters coming in
 int rxindex = 0; // index for going though rxString
 
-int doneFlag = 0;
+int errorFlag = 0;
 
-char rx_Out[100];
+char rx_Out[17];
 
-int mode_Int = 2;
+int Serial_Mode_Int = -1;
 
+int rxState = 0;
+
+void (*RXHandlerCallback) (uint8_t);
+int RXHandlerRegistered = 0;
+
+int serial_Busy = 0;
+
+uint8_t pData_Local[100];
 
 
 //=====================================================//
@@ -41,6 +50,7 @@ void Error(int err) {
 	int i;
 	char string[17];
 	sprintf(string, "ERROR: %d", err);
+	lcd_clear_display();
 	lcd_write_string(string, 0, 0);
 	for (i = 0; i<10; i++) {
 		LED_Out(0xFF);
@@ -48,14 +58,45 @@ void Error(int err) {
 		LED_Out(err);
 		Delay(100);
 	}
+	lcd_clear_display();
+}
+
+int Check_For_Serial() {
+//	int state = 0;
+//	// Enable clock
+//	__HAL_RCC_GPIOA_CLK_ENABLE();	
+//	
+//	// Initialise GPIOs
+//	GPIO_InitTypeDef GPIO_InitStructure;
+//	GPIO_InitStructure.Pin = GPIO_PIN_3;
+//	GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
+//	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
+//	GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
+//	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
+//	
+//	state = HAL_GPIO_ReadPin(GPIOA, 3);
+//	
+//	// TODO: deinit GPIO?
+	
+	return 1;
+}
+
+void Register_RX_Handler(void (*RXHandlerLocal) (uint8_t)) {
+	RXHandlerCallback = RXHandlerLocal;
+	RXHandlerRegistered = 1;
+}
+
+void Deregister_RX_Handler() {
+	RXHandlerCallback = NULL;
+	RXHandlerRegistered = 0;
 }
 
 
-void SerialInit()
-{
+void SerialInit() {
 	HAL_StatusTypeDef Ret;
 	
 	sprintf(rx_Out, "");
+	sprintf((char*)rxString, "");
 	
 	// UART handle and configguration
 	//UART_HandleTypeDef UART_Handle; // Made global for now
@@ -72,45 +113,73 @@ void SerialInit()
 	if (Ret != HAL_OK) {
 		//TODO: handle this
 	}
+	SerialReceiveStart();
+	//SerialReceiveDump();
+	Delay(100);
+
+	rxState = 0;
 }
 
 
 // Blocking send for now, could be better implemented in the future
-void SerialSend(uint8_t *pData, uint16_t Size, uint32_t Timeout) {
-	doneFlag = 0;
-	HAL_StatusTypeDef Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData, Size);
-	while (doneFlag == 0) {
-		Delay(100);
+Serial_StatusTypeDef Serial_Send(uint8_t *pData, uint16_t Size) {
+	if (serial_Busy == 1) {
+		return SERIAL_BUSY;
 	}
-	
+	else {
+		serial_Busy = 1;
+		
+		int i;
+		for (i=0; i<Size; i++) {
+			pData_Local[i] = pData[i];
+		}
+		//memcpy (pData_Local, pData, Size);
+		HAL_StatusTypeDef Ret;
+		Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData_Local, Size);
+		// Block for now
+		/*
+		while (serial_Busy == 1) {
+			Delay(100);
+		}
+		*/
+		if (Ret == HAL_OK)
+			return SERIAL_OK;
+		else
+			return SERIAL_ERROR;
+	}
 }
 
 
 void SerialReceiveStart() {
 	// Start DMA recieve
 	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
+	//__HAL_DMA_ENABLE(&DMA_Rx_Handle);
+	rxState = 0;
 	HAL_UART_Receive_DMA(&UART_Handle, &rxBuffer, 1);
 }
 
 
-void SerialReceive() {
+
+
+void Serial_Receive() {
 	if (strcmp(rx_Out, "") != 0) {
 		char string[17];
 		sprintf(string, "Serial:");
+		lcd_clear_display();
 		lcd_write_string(string, 0, 0);
 		sprintf(string, "%s", rx_Out);
 		lcd_write_string(string, 1, 0);
 		Delay(5000);
-		lcd_write_string("", 0, 0);
+		lcd_clear_display();
 		sprintf(rx_Out ,"");
 	}
 }
 
 
-void SerialCheckMode(int *mode) {
-	if (mode_Int != 10) {
-		*mode = mode_Int;
-		mode_Int = 10;
+void Serial_Check_Mode(int *mode) {
+	if (Serial_Mode_Int != -1) {
+		*mode = Serial_Mode_Int;
+		Serial_Mode_Int = -1;
 	}
 }
 
@@ -159,70 +228,89 @@ HAL_StatusTypeDef Custom_HAL_UART_AbortTransmit(UART_HandleTypeDef *huart)
 //=====================================================//
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-	doneFlag = 17;
+	serial_Busy = 0;
 	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
 	//HAL_UART_DMAStop(huart);
 	Custom_HAL_UART_AbortTransmit(huart);
-	
 }
 
 
-int rxState = 0; 
+int pos = 0;
 	
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    __HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
+  __HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
 	
-	
-	if (rxState == 0) { // Check what to expect
-		if (rxBuffer == 's') {
-			rxState = 1;
+	if (RXHandlerRegistered == 1) {
+		RXHandlerCallback(rxBuffer);
+	}
+	else {
+		
+		if (rxState == 0) { // Check what to expect
+			if (rxBuffer == 's') {
+				rxState = 1;
+			}
+			if (rxBuffer == 'm') {
+				rxState = 2;
+			} 
 		}
-		if (rxBuffer == 'm') {
-			rxState = 2;
-		} 
-	}
-	
-	else if (rxState == 1) { // expect string
-	
-    int i = 0;
+		
+		else if (rxState == 1) { // expect string
+		
+			int i = 0;
 
-    if (rxBuffer == '\n' || rxBuffer == '\r') // If Enter
-    {
-			rxString[rxindex] = 0;
-			sprintf(rx_Out, "%s", rxString);
-			rxindex = 0;
-			for (i = 0; i < 100; i++) rxString[i] = 0; // Clear the string buffer
-			rxState = 0; // String complete, go back to check
-    }
+			if (rxBuffer == '\n' || rxBuffer == '\r') // If Enter
+			{
+				rxString[rxindex] = 0;
+				sprintf(rx_Out, "%s", rxString);
+				rxindex = 0;
+				for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
+				
+				// String complete, go back to check
+				rxState = 0;
+			}
 
-    else
-    {
-        rxString[rxindex] = rxBuffer; // Add that character to the string
-        rxindex++;
-        if (rxindex > 100) // User typing too much, we can't have commands that big
-        {
-            rxindex = 0;
-            for (i = 0; i < 100; i++) rxString[i] = 0; // Clear the string buffer
-        }
-    }
-	}
-	
-	else if (rxState == 2) { // Expect mode
-		if ((rxBuffer - '0') < 3) { // valid mode
-			mode_Int = (int) rxBuffer - '0';
+			else
+			{
+					rxString[rxindex] = rxBuffer; // Add that character to the string
+					rxindex++;
+					if (rxindex >= 17) // User typing too much, we can't have commands that big
+					{
+							rxindex = 0;
+							for (i = 0; i < 17; i++) rxString[i] = 0; // Clear the string buffer
+							rxState = 0;
+							sprintf(rx_Out, "String too long");
+					}
+			}
 		}
-		rxState = 0; // String complete, go back to check
+		
+		else if (rxState == 2) { // Expect mode
+			if (((rxBuffer - '0') < 3) & (rxBuffer >= '0')){ // valid mode
+				Serial_Mode_Int = (int) rxBuffer - '0';
+			}
+			// RX complete, go back to check
+			rxState = 0;
+		}
+		
+		else if (rxState == 3) { // Check response to AT command
+			rxState = 0;
+		}
+
 	}
+	
 }
 
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+	errorFlag = 1;
 	char string[17];
 	Error(7);
 	sprintf(string, "Serial Fail");
+	lcd_clear_display();
 	lcd_write_string(string, 0,0);
-	Delay(5000);	
+	Delay(5000);
+	lcd_clear_display();
+	serial_Busy = 0;
 }
 
 
@@ -238,6 +326,7 @@ void DMA1_Stream5_IRQHandler(void)
 	NVIC_ClearPendingIRQ(DMA1_Stream5_IRQn);
 	HAL_DMA_IRQHandler(&DMA_Rx_Handle);
 }
+
 
 
 
@@ -266,6 +355,7 @@ void SetupDMA(UART_HandleTypeDef *huart) {
 	DMA_Rx_Handle.Init.Priority = DMA_PRIORITY_LOW;
 	DMA_Rx_Handle.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
 	HAL_DMA_Init(&DMA_Rx_Handle);
+	//__HAL_DMA_DISABLE(&DMA_Rx_Handle);
 
 	__HAL_LINKDMA(huart, hdmarx, DMA_Rx_Handle);
 
@@ -336,7 +426,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 	GPIO_InitStructure.Alternate = GPIO_AF7_USART2;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
-	SetupCallbacks();
+	//SetupCallbacks();
 	SetupDMA(huart);	
 }
 
