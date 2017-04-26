@@ -41,7 +41,7 @@ uint32_t buttonUpdate = 0;
 uint32_t modeUpdate = 1;
 
 
-int mode = 0; // C, V, R, F, H
+int mode = 0; // C, V, R, F, H, Hz
 int muxRange = 0;
 char unit[3] = {'A',' ', '\0'};
 char string[17];
@@ -57,8 +57,6 @@ void Set_Button_Update(void){
 }
 void getButtonUpdate(void){
 	resetTimersAndStates();
-	buttonUpdate = 0;
-	mode = Get_Mode();
 	switch (mode) {
 		case CURRMODE:
 			unit[0] = 'A';
@@ -140,7 +138,6 @@ void Thread_System (void const *argument) {
 	
 	// Ranging perameters
  
-	int mode = 0; // C, V, R, F, H, Hz
 	LED_Out(1);
 	GPIO_Off(3);
  
@@ -165,46 +162,6 @@ void Thread_System (void const *argument) {
 		
 		if (modeUpdate == 1) {
 			modeUpdate = 0;
-
-			switch (mode) {
-				case 0:
-					unit[0] = 'A';
-					LED_Out(1);
-					lcd_write_string("              ", 0,0);
-				break;
-				case 1:
-					unit[0] = 'V';
-					LED_Out(2);
-					lcd_write_string("              ", 0,0);
-				break;
-				case 2:
-					unit[0] = (char)0xDE;
-					LED_Out(4);
-					lcd_write_string("              ", 0,0);
-				break;
-				case 3:
-					unit[0] = 'F';
-					LED_Out(8);
-					capacitorState = 0;
-					lcd_write_string("              ", 0,0);
-				break;
-				case 4: 
-					unit[0] = 'H';
-					LED_Out(16);
-					lcd_write_string("              ", 0,0);
-				break;
-				case 5:
-					unit[0] = 'H';
-					LED_Out(32);
-					lcd_write_string("              ", 0,0);
-				break;
-				default:
-					unit[0] = '/';
-					sprintf(string, "Undefined mode!");
-					lcd_write_string(string, 0,0);
-					Delay(1000);
-				break;
-			}
 
 			getButtonUpdate();
 
@@ -308,8 +265,6 @@ void Thread_System (void const *argument) {
 		
 		int modePrev = mode;
 		Comms_Check_Mode(&mode);
-		sprintf(string, "%d", mode);
-		lcd_write_string(string, 1, 13);
 		if (modePrev != mode) {
 			modeUpdate = 1;
 		}
