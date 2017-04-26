@@ -202,7 +202,7 @@
 // Standard library system mutexes
 // ===============================
 //  Define max. number system mutexes that are used to protect 
-//  the arm standard runtime library. For microlib they are not used.
+//  the arm standard runtime library. For MICROlib they are not used.
 #ifndef OS_MUTEXCNT
  #define OS_MUTEXCNT    8
 #endif

@@ -17,6 +17,7 @@
 #include "SWT.h"
 #include "LED.h"
 #include "System_Thread.h"
+#include "Defines.h"
 
 #include "Calculations.h"
 #include "Timers.h"
@@ -137,23 +138,38 @@ void Calc_Temp_Mode(void){
 	
 	switch(GPIOE_value){
 		case 1:
-			temp_mode = 0;
+			temp_mode = CURRMODE;
 			break;
 		case 2:
-			temp_mode = 1;
+			if(temp_mode == VOLTMODE){
+				temp_mode = RMS;
+			}
+			else{
+				temp_mode = VOLTMODE;
+			}
+			
 			break;
 		case 4:
-			temp_mode = 2;
+			if(temp_mode == CONTMODE){
+				temp_mode = DIODE;
+			}
+			else if(temp_mode == DIODE)
+			{
+				temp_mode = RESMODE;
+			}	
+			else
+			{
+				temp_mode = CONTMODE;
+			}	
 			break;
 		case 8:
-			temp_mode = 3;
+			temp_mode = CAPMODE;
 			break;
-
 		case 16:
-			temp_mode = 4;
+			temp_mode = INDMODE;
 			break;
 		case 32:
-			temp_mode = 5;
+			temp_mode = FREQMODE;
 			break;
 
 		case 128:
