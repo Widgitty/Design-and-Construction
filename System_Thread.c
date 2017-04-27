@@ -57,6 +57,9 @@ void Set_Button_Update(void){
 }
 void getButtonUpdate(void){
 	resetTimersAndStates();
+	buttonUpdate = 0;
+	GPIO_SetMode(mode);
+
 	switch (mode) {
 		case CURRMODE:
 			unit[0] = 'A';
@@ -127,9 +130,7 @@ void Thread_System (void const *argument) {
 	Comms_Init();
 
 	calibAdjustTypeDef calib_Data[NUM_MODES];
-	
 	Calibration_Init(calib_Data);
-	
 
 	
 	uint32_t value = 0;
