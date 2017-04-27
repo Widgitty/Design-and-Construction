@@ -1,15 +1,40 @@
 #include "STM32F4xx.h"
 #include "GPIO.h"
+#include "Defines.h"
 
 const unsigned long GPIO_mask[] = {1UL << 3, 1UL << 4, 1UL << 5, 1UL << 6, 1UL << 7};
+const unsigned long GPIO_mode_mask[] = {1UL << 5, 1UL << 6, 1UL << 13};
 
 /*----------------------------------------------------------------------------
   initialize LED Pins
  *----------------------------------------------------------------------------*/
 void GPIO_Init (void) {
 
+	
   RCC->AHB1ENR  |= ((1UL <<  3) );         /* Enable GPIOD clock                */
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
 
+	GPIOC->MODER    &= ~((3UL << 2*5) |
+											 (3UL << 2*6) |
+											 (3UL << 2*13));
+	GPIOC->MODER    |=  ((3UL << 2*5) |
+											 (3UL << 2*6) |
+											 (3UL << 2*13));
+	GPIOC->OTYPER   &= ~((3UL <<    5)|
+											 (3UL <<   6) |
+											 (3UL <<   13));
+	GPIOC->OSPEEDR  &= ~((3UL << 2*5) |
+											 (3UL << 2*6) |
+											 (3UL << 2*13));
+	GPIOC->OSPEEDR  |=  ((3UL << 2*5) |
+											 (3UL << 2*6) |
+											 (3UL << 2*13));
+	GPIOC->PUPDR    &= ~((3UL << 2*5) |
+											 (3UL << 2*6) |
+											 (3UL << 2*13));
+	GPIOC->PUPDR    |=  ((3UL << 2*5) |
+											 (3UL << 2*6) |
+											 (3UL << 2*13));
   GPIOE->MODER    &= ~((3UL << 2*3) |
                        (3UL << 2*4) |
                        (3UL << 2*5) |
@@ -55,6 +80,52 @@ void GPIO_On (unsigned int num) {
   if (num < GPIO_NUM) {
     GPIOE->BSRR = GPIO_mask[num];
   }
+}
+
+void GPIO_SetMode(int mode){
+	switch(mode){
+		case CURRMODE:
+			GPIO_Off(0);
+			break;
+		case VOLTMODE:
+			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
+			break;
+		case RESMODE:
+			GPIO_Off(0);
+			break;
+		case CAPMODE:
+			GPIOC->BSRR = GPIO_mode_mask[0];
+			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
+			break;
+		case INDMODE:
+			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[1];
+			GPIOC->BSRR = GPIO_mode_mask[2];
+			break;
+		case DIODE:
+			break;
+		case CONTMODE:
+			GPIO_On(0);
+			break;
+		case RMS:
+			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[1];
+			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
+			break;
+		case FREQMODE:
+			GPIOC->BSRR = GPIO_mode_mask[0];
+			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
+			break;
+		default:
+			GPIOC->BSRR = GPIO_mode_mask[0];
+			GPIOC->BSRR = GPIO_mode_mask[1];
+			GPIOC->BSRR = GPIO_mode_mask[2];
+			break;
+	}
 }
 
 /*----------------------------------------------------------------------------
