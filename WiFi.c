@@ -22,6 +22,7 @@ int WiFi_Mode_Int = -1;
 int dataQueued = 0;
 uint8_t dataQueue[100];
 uint16_t queueSize = 0;
+int WiFi_CID = 0;
 
 int WiFi_Busy = 0;
 
@@ -161,7 +162,11 @@ void WiFi_Send(uint8_t *pData, uint16_t Size) {
 		WiFi_Busy = 1;
 		char string[17];
 		Queue_Data(pData, Size);
-		sprintf(string, "AT+CIPSEND=0,%d\r\n", Size);
+		sprintf(string, "AT+CIPSEND=%d,%d\r\n",WiFi_CID, Size);
+		WiFi_CID ++;
+		if (WiFi_CID >= 3) {
+			WiFi_CID = 0;
+		}
 		Serial_Send((uint8_t*)string, strlen(string));
 	}
 }
