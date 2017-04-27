@@ -16,12 +16,12 @@
 // 
 #define CURRMODE 0
 #define VOLTMODE 1
-#define RESMODE 2
-#define CAPMODE 3
-#define INDMODE 4
-#define FREQMODE 5
-#define CONTMODE 6
-#define RMS 7
+#define RMS 2
+#define RESMODE 3
+#define CAPMODE 4
+#define INDMODE 5
+#define FREQMODE 6
+#define CONTMODE 7
 #define DIODE 8
 
 // different M_ultiplexing ranges.
