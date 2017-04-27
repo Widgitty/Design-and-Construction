@@ -150,17 +150,18 @@ void Calc_Temp_Mode(void){
 			
 			break;
 		case 4:
-			if(temp_mode == CONTMODE){
-				temp_mode = DIODE;
-			}
-			else if(temp_mode == DIODE)
-			{
-				temp_mode = RESMODE;
-			}	
-			else
+			if(temp_mode == RESMODE)
 			{
 				temp_mode = CONTMODE;
 			}	
+			else if(temp_mode == CONTMODE)
+			{
+				temp_mode = DIODE;
+			}	
+			else
+			{
+				temp_mode = RESMODE;
+			}
 			break;
 		case 8:
 			temp_mode = CAPMODE;

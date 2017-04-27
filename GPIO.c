@@ -83,6 +83,7 @@ void GPIO_On (unsigned int num) {
 }
 
 void GPIO_SetMode(int mode){
+	GPIO_Off(0);
 	switch(mode){
 		case CURRMODE:
 			GPIO_Off(0);
@@ -106,6 +107,7 @@ void GPIO_SetMode(int mode){
 			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
 			break;
 		case DIODE:
+			GPIO_Off(0);
 			break;
 		case CONTMODE:
 			GPIO_On(0);

@@ -81,6 +81,13 @@ void restartCounter(void){
 }
 
 
+/*void setMuxPins(double scaledValue){
+	// calculate mux output pin stuff
+	
+	  scaleFactor = 10;
+		GPIO_Off(1);
+		GPIO_Off(2);
+}*/
 void setMuxPins(double scaledValue){
 	// calculate mux output pin stuff
 	
