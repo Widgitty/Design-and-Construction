@@ -94,6 +94,9 @@ void GPIO_SetMode(int mode){
 			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
 			break;
 		case RESMODE:
+			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[1];
+			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
 			GPIO_Off(0);
 			break;
 		case CAPMODE:
