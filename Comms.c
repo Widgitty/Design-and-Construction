@@ -28,6 +28,7 @@ void Comms_Init() {
 	if (serialEnabled == 1) {
 		SerialInit();
 		SerialReceiveStart();
+		Reset_WiFi();
 		WiFiEnabled = Check_For_WiFi();
 		if (WiFiEnabled == 1) {
 			int i;

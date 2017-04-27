@@ -3,6 +3,7 @@
 #include "cmsis_os.h"
 #include "Serial.h"
 #include "String.h"
+#include "stm32f4xx_hal_rcc.h"
 
 #define Delay osDelay
 
@@ -36,6 +37,28 @@ void Queue_Data (uint8_t *pData, uint16_t Size) {
 	}
 	queueSize = Size;
 	dataQueued = 1;
+}
+
+void Reset_WiFi() {
+
+	// Enable clock
+	__HAL_RCC_GPIOC_CLK_ENABLE();	
+	
+	// Initialise GPIOs
+	GPIO_InitTypeDef GPIO_InitStructure;
+	GPIO_InitStructure.Pin = GPIO_PIN_1;
+	GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_OD;
+	//GPIO_InitStructure.Pull = GPIO_NOPULL;
+	GPIO_InitStructure.Pull = GPIO_PULLUP;
+	GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
+	
+	Register_RX_Handler(&RX_Handler);
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
+	Delay(100);
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
+	Delay(100);
+	Deregister_RX_Handler();
 }
 
 // Blocking function, but only for init
