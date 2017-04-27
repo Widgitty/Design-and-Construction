@@ -96,14 +96,14 @@ void GPIO_SetMode(int mode){
 			GPIO_Off(0);
 			break;
 		case CAPMODE:
-			GPIOC->BSRR = GPIO_mode_mask[0];
+			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
 			GPIOC->BSRR = GPIO_mode_mask[1];
 			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
 			break;
 		case INDMODE:
-			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
-			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
-			GPIOC->BSRR = GPIO_mode_mask[2];
+			GPIOC->BSRR = GPIO_mode_mask[0];
+			GPIOC->BSRR = GPIO_mode_mask[1];
+			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
 			break;
 		case DIODE:
 			break;
@@ -111,13 +111,13 @@ void GPIO_SetMode(int mode){
 			GPIO_On(0);
 			break;
 		case RMS:
-			GPIOC->BSRR = GPIO_mode_mask[0];
+			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
 			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
-			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[2];
 			break;
 		case FREQMODE:
-			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
-			GPIOC->BSRR = GPIO_mode_mask[1];
+			GPIOC->BSRR = GPIO_mode_mask[0];
+			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
 			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
 			break;
 		default:
