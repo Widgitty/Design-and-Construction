@@ -17,24 +17,24 @@ void GPIO_Init (void) {
 	GPIOC->MODER    &= ~((3UL << 2*5) |
 											 (3UL << 2*6) |
 											 (3UL << 2*13));
-	GPIOC->MODER    |=  ((3UL << 2*5) |
-											 (3UL << 2*6) |
-											 (3UL << 2*13));
-	GPIOC->OTYPER   &= ~((3UL <<    5)|
-											 (3UL <<   6) |
-											 (3UL <<   13));
+	GPIOC->MODER    |=  ((1UL << 2*5) |
+											 (1UL << 2*6) |
+											 (1UL << 2*13));
+	GPIOC->OTYPER   &= ~((1UL <<    5)|
+											 (1UL <<   6) |
+											 (1UL <<   13));
 	GPIOC->OSPEEDR  &= ~((3UL << 2*5) |
 											 (3UL << 2*6) |
 											 (3UL << 2*13));
-	GPIOC->OSPEEDR  |=  ((3UL << 2*5) |
-											 (3UL << 2*6) |
-											 (3UL << 2*13));
+	GPIOC->OSPEEDR  |=  ((2UL << 2*5) |
+											 (2UL << 2*6) |
+											 (2UL << 2*13));
 	GPIOC->PUPDR    &= ~((3UL << 2*5) |
 											 (3UL << 2*6) |
 											 (3UL << 2*13));
-	GPIOC->PUPDR    |=  ((3UL << 2*5) |
-											 (3UL << 2*6) |
-											 (3UL << 2*13));
+	GPIOC->PUPDR    |=  ((1UL << 2*5) |
+											 (1UL << 2*6) |
+											 (1UL << 2*13));
   GPIOE->MODER    &= ~((3UL << 2*3) |
                        (3UL << 2*4) |
                        (3UL << 2*5) |
@@ -97,12 +97,12 @@ void GPIO_SetMode(int mode){
 			break;
 		case CAPMODE:
 			GPIOC->BSRR = GPIO_mode_mask[0];
-			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[1];
 			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
 			break;
 		case INDMODE:
 			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
-			GPIOC->BSRR = GPIO_mode_mask[1];
+			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
 			GPIOC->BSRR = GPIO_mode_mask[2];
 			break;
 		case DIODE:
@@ -111,13 +111,13 @@ void GPIO_SetMode(int mode){
 			GPIO_On(0);
 			break;
 		case RMS:
-			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
-			GPIOC->BSRR = GPIO_mode_mask[1];
+			GPIOC->BSRR = GPIO_mode_mask[0];
+			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
 			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
 			break;
 		case FREQMODE:
-			GPIOC->BSRR = GPIO_mode_mask[0];
-			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[0] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[1];
 			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
 			break;
 		default:

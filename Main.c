@@ -13,6 +13,7 @@
 #include "GPIO.h"
 #include "Timers.h"
 #include "lcd_driver.h"
+#include "Serial.h"
 
 
 
@@ -35,12 +36,16 @@ int main (void) {
   SWT_Init();
 	ADC1_Init();
 	DAC_Init();
-	GPIO_Init();
+
 	Timer_Init();
 	Interrupt_Init();
 	
+	SerialInit();
+	
 	lcd_init(LCD_LINES_TWO, LCD_CURSOR_OFF, LCD_CBLINK_OFF, 128);
 	lcd_clear_display();
+	
+	GPIO_Init();
 	
 	Delay(10);
 	Init_Thread_System();

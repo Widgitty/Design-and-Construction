@@ -19,6 +19,7 @@
 /* LED Definitions */
 #define GPIO_NUM     5                        /* Number of user LEDs          */
 
+extern void GPIO_SetMode(int mode);
 extern void GPIO_Init(void);
 extern void GPIO_On  (unsigned int num);
 extern void GPIO_Off (unsigned int num);

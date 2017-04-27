@@ -53,6 +53,7 @@ void getButtonUpdate(void){
 	resetTimersAndStates();
 	buttonUpdate = 0;
 	mode = Get_Mode();
+	GPIO_SetMode(mode);
 	switch (mode) {
 		case CURRMODE:
 			unit[0] = 'A';
@@ -119,17 +120,10 @@ void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 
 	char string[17];
-
-	//SerialInit();
-	//SerialReceiveStart();
 	
 	calibAdjustTypeDef calib_Data[NUM_MODES];
-	
 	Calibration_Init(calib_Data);
 	
-	
-	
-	SerialInit();
 	SerialReceiveStart();
 
 	
