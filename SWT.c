@@ -16,7 +16,6 @@
 #include "STM32F4xx.h"
 #include "SWT.h"
 #include "LED.h"
-#include "LCD.h"
 #include "System_Thread.h"
 #include "Defines.h"
 

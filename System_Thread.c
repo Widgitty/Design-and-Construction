@@ -17,11 +17,12 @@
 #include "cmsis_os.h"
 #include "core_cm4.h"
 #include "Calculations.h"
-#include "Serial.h"
 #include "String.h"
 #include "Calibration.h"
 #include "lcd_driver.h"
 #include "Defines.h"
+#include "Comms.h"
+
 
 // replace Delay with osDelay for compatibility with RTOS
 #define Delay osDelay
@@ -36,10 +37,15 @@ osThreadId tid_Thread_System;                              // thread id
 // Thread priority set to high, as system thread should not be blockable
 osThreadDef(Thread_System, osPriorityHigh, 1, 0);        // thread object
 uint32_t buttonUpdate = 0;
-int mode = 0; // C, V, R, F, H
+
+uint32_t modeUpdate = 1;
+
+
+int mode = 0; // C, V, R, F, H, Hz
 int muxRange = 0;
 char unit[3] = {'A',' ', '\0'};
 char string[17];
+
 int Init_Thread_System (void) {
   tid_Thread_System = osThreadCreate(osThread(Thread_System), NULL);
   if (!tid_Thread_System) return(-1);
@@ -52,8 +58,8 @@ void Set_Button_Update(void){
 void getButtonUpdate(void){
 	resetTimersAndStates();
 	buttonUpdate = 0;
-	mode = Get_Mode();
 	GPIO_SetMode(mode);
+
 	switch (mode) {
 		case CURRMODE:
 			unit[0] = 'A';
@@ -120,11 +126,11 @@ void Thread_System (void const *argument) {
 	Delay(100); // wait for mpool to be set up in other thread (some signaling would be better)
 
 	char string[17];
-	
+
+	Comms_Init();
+
 	calibAdjustTypeDef calib_Data[NUM_MODES];
 	Calibration_Init(calib_Data);
-	
-	SerialReceiveStart();
 
 	
 	uint32_t value = 0;
@@ -132,31 +138,34 @@ void Thread_System (void const *argument) {
 	
 	
 	// Ranging perameters
-
  
-	int mode = 0; // C, V, R, F, H
-	LED_Out(0);
+	LED_Out(1);
 	GPIO_Off(3);
  
 	// range defines the relay output, which is on when being on the MILLI range and also sets the LCD to show a certain value.
 	int range = UNIT; 
-	
- 
 
-	
 	
 	GPIOD->ODR = 0;
 	getButtonUpdate();
 
 	while (1) {
+
 		Delay(10);
-	
-		mode = Get_Mode();
 
 
 		// this code is only executed if a button update happened (a button was pressed)
 		if(buttonUpdate == 1){
+			buttonUpdate = 0;
+			mode = Get_Mode();
+			modeUpdate = 1;
+		}
+		
+		if (modeUpdate == 1) {
+			modeUpdate = 0;
+
 			getButtonUpdate();
+
 		}
 		
 		// Read ADC
@@ -189,7 +198,12 @@ void Thread_System (void const *argument) {
 				break;
 			}
 		
-		
+
+		value_calk = value;
+		//value_calk = adcConv(mode, value, &range);
+
+		value_calk = adcConv(mode, value, &range, calib_Data);
+		value_calk = movAvg(value_calk, mode, &range);
 
 		
 			
@@ -236,15 +250,32 @@ void Thread_System (void const *argument) {
 			}
 		}
 
-		//SerialSend((uint8_t*)string, strlen(string), 1000);
+		/*
+		if (range == 1) {
+			lcd_write_string("m", 0, 14);
+			sprintf(string, "%s m%s\r\n", string, unit);
+		} else {
+			lcd_write_string(" ", 0, 14);
+			sprintf(string, "%s %s\r\n", string, unit);
+		}*/
+
+		//SerialSend((uint8_t*)string, strlen(string));
+		Comms_Send(value_calk, (uint8_t)mode, (uint8_t)range);
 		
-		//SerialReceive();
+		Comms_Receive();
 		
-		//SerialCheckMode(&mode);
+		int modePrev = mode;
+		Comms_Check_Mode(&mode);
+		if (modePrev != mode) {
+			modeUpdate = 1;
+		}
+
 		
 		Check_Calibration_Flag(mode, range, calib_Data);
 	}
 }
+
+
 void resetTimersAndStates(void){
 	lcd_write_string("                ", 0,0);
 	lcd_write_string("                ", 1,0);

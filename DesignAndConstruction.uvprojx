@@ -394,11 +394,6 @@
               <FilePath>.\SWT.c</FilePath>
             </File>
             <File>
-              <FileName>LCD.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\LCD.c</FilePath>
-            </File>
-            <File>
               <FileName>ADC.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\ADC.c</FilePath>
@@ -412,11 +407,6 @@
               <FileName>System_Thread.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\System_Thread.c</FilePath>
-            </File>
-            <File>
-              <FileName>Testing.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Testing.c</FilePath>
             </File>
             <File>
               <FileName>GPIO.c</FileName>
@@ -462,6 +452,16 @@
               <FileName>DAC.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\DAC.h</FilePath>
+            </File>
+            <File>
+              <FileName>Comms.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Comms.c</FilePath>
+            </File>
+            <File>
+              <FileName>WiFi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\WiFi.c</FilePath>
             </File>
           </Files>
         </Group>
