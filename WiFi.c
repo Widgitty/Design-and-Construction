@@ -208,7 +208,7 @@ void Check_String () {
 		if (WiFiRXString[9] == 'm') {
 			// handle mode change
 			uint8_t byte = WiFiRXString[10];
-			if (((byte - '0') < 6) & (byte >= '0')){ // valid mode
+			if (((byte - '0') < 9) & (byte >= '0')){ // valid mode
 				WiFi_Mode_Int = (int) byte - '0';
 			}
 		}

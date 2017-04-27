@@ -109,6 +109,7 @@ void getButtonUpdate(void){
 			lcd_write_string("Continuity mode", 0,0);
 			break;
 		case RMS:
+			LED_Out(4);
 			lcd_write_string("Voltage RMS", 0,0);
 			break;
 		default:
