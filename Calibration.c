@@ -215,10 +215,17 @@ void Calibration_Factory_Reset(calibAdjustTypeDef *calib_Data) {
 
 	calibMeasurementTypeDef calib_Points[NUM_MODES];
 	
+	/*
 	calib_Points[0].lowerPointIn = 0;
 	calib_Points[0].lowerPointOut = -1;
 	calib_Points[0].upperPointIn = 3723;
 	calib_Points[0].upperPointOut = 1;
+	*/
+	
+	calib_Points[0].lowerPointIn = 784;
+	calib_Points[0].lowerPointOut = -0.5;
+	calib_Points[0].upperPointIn = 2964;
+	calib_Points[0].upperPointOut = 0.5;
 	
 	calib_Points[1].lowerPointIn = 0;
 	calib_Points[1].lowerPointOut = -10;
@@ -235,6 +242,8 @@ void Calibration_Factory_Reset(calibAdjustTypeDef *calib_Data) {
 	calib_Points[3].lowerPointOut = 0;
 	calib_Points[3].upperPointIn = 3723;
 	calib_Points[3].upperPointOut = 100000;
+	
+	// max input = 4096
 	
 	Write_Calibration(calib_Points);
 	Calculate_Calibration(calib_Data, calib_Points);

@@ -198,7 +198,7 @@ void setCurrentMuxPins(double scaledValue){
 		case 0:
 			if((scaledValue <= 0.09) && (scaledValue >= -0.09)){
 				muxMode = 1;
-				scaleFactor = 0.1;
+				scaleFactor = 0.133; // With fudge factor
 				GPIO_On(0);
 			}
 			break;
@@ -206,7 +206,7 @@ void setCurrentMuxPins(double scaledValue){
 		case 1:
 			if((scaledValue >= 0.11) || (scaledValue <= -0.11)){
 				muxMode = 0;
-				scaleFactor = 1;
+				scaleFactor = 0.9; // With fudge factor
 				GPIO_Off(0);
 			}
 			break;
@@ -557,28 +557,28 @@ double movAvg(double avgIn, int mode, int *rangep){
 	double bCoeff = 0.0000001;
 		
 		// CURRENT MODE - averaging conditions for the MILLIamps range.
-		if(mode == 0 && (avgIn > avgOut + 10 || avgIn < avgOut - 10)){
+		if(mode == CURRMODE && (avgIn > avgOut + 10 || avgIn < avgOut - 10)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// VOLTAGE MODE - averaging conditions for the volts range.
-		else if(mode == 1 && *rangep == UNIT && (avgIn > avgOut + 0.1 || avgIn < avgOut - 0.1)){
+		else if(mode == VOLTMODE && *rangep == UNIT && (avgIn > avgOut + 0.1 || avgIn < avgOut - 0.1)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// VOLTAGE MODE - averaging conditions for the 30 volts range.
-		else if(mode == 1 && *rangep == UNIT30 && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
+		else if(mode == VOLTMODE && *rangep == UNIT30 && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// VOLTAGE MODE - averaging conditions for the MILLIvolts range.
-		else if(mode == 1 && *rangep == MILLI && (avgIn > avgOut + 50 || avgIn < avgOut - 50)){
+		else if(mode == VOLTMODE && *rangep == MILLI && (avgIn > avgOut + 50 || avgIn < avgOut - 50)){
 			avgOut = avgIn;
 			restartCounter();
 				
@@ -586,21 +586,21 @@ double movAvg(double avgIn, int mode, int *rangep){
 		
 	
 		// RESISTANCE MODE - averaging conditions for the ohms range.
-		else if(mode == 2 && *rangep == UNIT && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
+		else if(mode == RESMODE && *rangep == UNIT && (avgIn > avgOut + 1 || avgIn < avgOut - 1)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// RESISTANCE MODE - averaging conditions for the KILOhms range.
-		else if(mode == 2 && *rangep == KILO && (avgIn > avgOut + 10 || avgIn < avgOut - 10)){
+		else if(mode == RESMODE && *rangep == KILO && (avgIn > avgOut + 10 || avgIn < avgOut - 10)){
 			avgOut = avgIn;
 			restartCounter();
 				
 		}
 		
 		// RESISTANCE MODE - averaging conditions for the MEGAohms range.
-		else if(mode == 2 && *rangep == MEGA && (avgIn > avgOut + 100 || avgIn < avgOut - 100)){
+		else if(mode == RESMODE && *rangep == MEGA && (avgIn > avgOut + 100 || avgIn < avgOut - 100)){
 			avgOut = avgIn;
 			restartCounter();
 				

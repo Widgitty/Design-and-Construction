@@ -179,7 +179,7 @@ void Thread_System (void const *argument) {
 			
 			value_calk = adcConv(mode, value, &range, calib_Data);
 			
-			value_calk = movAvg(value_calk, mode, &range);
+			//value_calk = movAvg(value_calk, mode, &range);
 			
 			//value_calk = Calib_Conv_Test(mode, value, &range, calib_Data);
 
