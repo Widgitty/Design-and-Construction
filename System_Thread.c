@@ -142,6 +142,7 @@ void Thread_System (void const *argument) {
  
 	LED_Out(1);
 	GPIO_Off(3);
+
  
 	// range defines the relay output, which is on when being on the MILLI range and also sets the LCD to show a certain value.
 	int range = UNIT; 
@@ -171,15 +172,15 @@ void Thread_System (void const *argument) {
 		
 		// Read ADC
 		Delay(10);
-		//if(mode != CONTMODE && mode != DIODE){
-		if (1) {
+		if(mode != CONTMODE && mode != DIODE){
 			value = read_ADC1();
 			
 			//value_calk = value;
 			
 			value_calk = adcConv(mode, value, &range, calib_Data);
 			
-			//value_calk = movAvg(value_calk, mode, &range);
+			if (mode == VOLTMODE)
+					value_calk = movAvg(value_calk, mode, &range);
 			
 			//value_calk = Calib_Conv_Test(mode, value, &range, calib_Data);
 

@@ -91,7 +91,7 @@ void restartCounter(void){
 }*/
 void setMuxPins(double scaledValue){
 	// calculate mux output pin stuff
-	
+	/*
 	switch (muxMode) {
 		case 0:
 			if((scaledValue <= 1000) && (scaledValue >= -1000)){
@@ -148,34 +148,30 @@ void setMuxPins(double scaledValue){
 			GPIO_Off(1);
 			GPIO_On(2);
 			break;
-	}
+	}*/
 	
-	/*
+	
 	if((scaledValue >= 1000) || (scaledValue <= -1000)){
-		muxMode = 0;
 		scaleFactor = 10;
 		GPIO_Off(1);
 		GPIO_Off(2);
 	}
 	else if((scaledValue >= 100) || (scaledValue <= -100)){
-		muxMode = 1;
 		scaleFactor = 1;
 		GPIO_Off(1);
 		GPIO_On(2);
 	}
 	else if((scaledValue >= 10) || (scaledValue <= -10)){
-		muxMode = 2;
 		scaleFactor = 0.1;
 		GPIO_On(1);
 		GPIO_Off(2);
 	}
 	else{
-		muxMode = 3;
 		scaleFactor = 0.01;
 		GPIO_On(1);
 		GPIO_On(2);
 	}
-	*/
+	
 }
 
 //on = +- 0.1
@@ -269,6 +265,26 @@ double adcConv(int mode, uint32_t value, int *rangep, calibAdjustTypeDef *calibD
 			
 		
 			output = currVoltCalc(tempOut, rangep, mode);
+		  break;
+			case RMS:
+			
+		
+		
+			*rangep = UNIT;	
+			
+			if(scaleFactor == 10.0)
+				scaleFactor = 3.0;
+			
+			scaledValue = tempOut * 100 * scaleFactor;
+			
+			
+			tempOut = tempOut * scaleFactor;
+			setMuxPins(scaledValue);
+			
+		
+			output = currVoltCalc(tempOut, rangep, mode) * -1;
+			GPIO_Off(1);
+			GPIO_On(2);
 		  break;
 		// RESISTANCE MODE - Use ohms law to calculate R. 
 		case RESMODE:
