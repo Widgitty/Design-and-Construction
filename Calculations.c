@@ -68,6 +68,7 @@ int inductanceBreak = 0;
 
 double scaledValue = 0.0;
 double scaleFactor = 1.0;
+int muxMode = 0;
 
 
 
@@ -91,27 +92,130 @@ void restartCounter(void){
 void setMuxPins(double scaledValue){
 	// calculate mux output pin stuff
 	
+	switch (muxMode) {
+		case 0:
+			if((scaledValue <= 1000) && (scaledValue >= -1000)){
+				muxMode = 1;
+				scaleFactor = 1;
+				GPIO_Off(1);
+				GPIO_On(2);
+			}
+			break;
+		
+		case 1:
+			if((scaledValue >= 1000) || (scaledValue <= -1000)){
+				muxMode = 0;
+				scaleFactor = 10;
+				GPIO_Off(1);
+				GPIO_Off(2);
+			}
+			else if((scaledValue <= 100) && (scaledValue >= -100)){
+				muxMode = 2;
+				scaleFactor = 0.1;
+				GPIO_On(1);
+				GPIO_Off(2);
+			}
+		
+			break;
+		
+		case 2:
+			if((scaledValue >= 100) || (scaledValue <= -100)){
+				muxMode = 1;
+				scaleFactor = 1;
+				GPIO_Off(1);
+				GPIO_On(2);
+			}
+			else if((scaledValue <= 10) && (scaledValue >= -10)){
+				muxMode = 3;
+				scaleFactor = 0.01;
+				GPIO_On(1);
+				GPIO_On(2);
+			}
+			break;
+		
+		case 3:
+			if((scaledValue >= 10) || (scaledValue <= -10)){
+				muxMode = 2;
+				scaleFactor = 0.1;
+				GPIO_On(1);
+				GPIO_Off(2);
+			}
+			break;
+		
+		default:
+			muxMode = 1;
+			scaleFactor = 1;
+			GPIO_Off(1);
+			GPIO_On(2);
+			break;
+	}
 	
-	
+	/*
 	if((scaledValue >= 1000) || (scaledValue <= -1000)){
+		muxMode = 0;
 		scaleFactor = 10;
 		GPIO_Off(1);
 		GPIO_Off(2);
 	}
 	else if((scaledValue >= 100) || (scaledValue <= -100)){
+		muxMode = 1;
 		scaleFactor = 1;
 		GPIO_Off(1);
 		GPIO_On(2);
 	}
 	else if((scaledValue >= 10) || (scaledValue <= -10)){
+		muxMode = 2;
 		scaleFactor = 0.1;
 		GPIO_On(1);
 		GPIO_Off(2);
 	}
 	else{
+		muxMode = 3;
 		scaleFactor = 0.01;
 		GPIO_On(1);
 		GPIO_On(2);
+	}
+	*/
+}
+
+//on = +- 0.1
+//off = +- 1
+
+//1: 1.2
+//0: 119m
+
+//1: 119 ma
+//0: 1.2A
+
+//1: 24mA
+//0: 246mA
+
+//1:3mA
+//0:3A
+
+void setCurrentMuxPins(double scaledValue){
+		switch (muxMode) {
+		case 0:
+			if((scaledValue <= 0.09) && (scaledValue >= -0.09)){
+				muxMode = 1;
+				scaleFactor = 0.1;
+				GPIO_On(0);
+			}
+			break;
+		
+		case 1:
+			if((scaledValue >= 0.11) || (scaledValue <= -0.11)){
+				muxMode = 0;
+				scaleFactor = 1;
+				GPIO_Off(0);
+			}
+			break;
+		
+		default:
+			muxMode = 0;
+			scaleFactor = 1;
+			GPIO_Off(0);
+			break;
 	}
 }
 
@@ -141,6 +245,10 @@ double adcConv(int mode, uint32_t value, int *rangep, calibAdjustTypeDef *calibD
 		// CURRENT MODE - input value ranges from [0 to 3], output ranges from [-1 to 1]
 		case CURRMODE:
 			*rangep = MILLI;
+		
+			tempOut = tempOut * scaleFactor;
+			setCurrentMuxPins(tempOut);
+		
 			output = currVoltCalc(tempOut, rangep, mode);
 			break;
 		// VOLTAGE MODE input - value ranges from [0 to 3], output ranges from [-10 to 10]

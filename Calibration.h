@@ -1,7 +1,7 @@
 #ifndef __CALIBRATION_H
 #define __CALIBRATION_H
 
-#define NUM_MODES 3
+#define NUM_MODES 4
 
 // Structure definitions
 

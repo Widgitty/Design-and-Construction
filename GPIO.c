@@ -86,7 +86,10 @@ void GPIO_SetMode(int mode){
 	GPIO_Off(0);
 	switch(mode){
 		case CURRMODE:
-			GPIO_Off(0);
+			//GPIO_Off(0);
+			GPIOC->BSRR = GPIO_mode_mask[0];
+			GPIOC->BSRR = GPIO_mode_mask[1] << 16;
+			GPIOC->BSRR = GPIO_mode_mask[2] << 16;
 			break;
 		case VOLTMODE:
 			GPIOC->BSRR = GPIO_mode_mask[0] << 16;

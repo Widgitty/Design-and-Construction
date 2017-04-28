@@ -171,15 +171,15 @@ void Thread_System (void const *argument) {
 		
 		// Read ADC
 		Delay(10);
-		if(mode != CONTMODE && mode != DIODE){
-		value = read_ADC1();
-			//value = (value *16);
+		//if(mode != CONTMODE && mode != DIODE){
+		if (1) {
+			value = read_ADC1();
+			
+			//value_calk = value;
 			
 			value_calk = adcConv(mode, value, &range, calib_Data);
 			
-			
-			
-			//value_calk = movAvg(value_calk, mode, &range);
+			value_calk = movAvg(value_calk, mode, &range);
 			
 			//value_calk = Calib_Conv_Test(mode, value, &range, calib_Data);
 
@@ -187,6 +187,7 @@ void Thread_System (void const *argument) {
 			// Set output based on range
 			// !!!!!! this may do the same job as the mode muyxing atm
 			
+			/*
 			switch (range) {
 				case MILLI:
 					GPIO_On(0);
@@ -198,13 +199,10 @@ void Thread_System (void const *argument) {
 					GPIO_Off(0); // Disconnect all inputs if possible
 				break;
 			}
+			*/
 		
 
-		value_calk = value;
-		//value_calk = adcConv(mode, value, &range);
 
-		value_calk = adcConv(mode, value, &range, calib_Data);
-		value_calk = movAvg(value_calk, mode, &range);
 
 		
 			

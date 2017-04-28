@@ -225,10 +225,16 @@ void Calibration_Factory_Reset(calibAdjustTypeDef *calib_Data) {
 	calib_Points[1].upperPointIn = 3723; // max raw ADC value
 	calib_Points[1].upperPointOut = 10;
 	
+	// might need to change for rms
 	calib_Points[2].lowerPointIn = 0;
 	calib_Points[2].lowerPointOut = 0;
 	calib_Points[2].upperPointIn = 3723;
 	calib_Points[2].upperPointOut = 100000;
+	
+	calib_Points[3].lowerPointIn = 0;
+	calib_Points[3].lowerPointOut = 0;
+	calib_Points[3].upperPointIn = 3723;
+	calib_Points[3].upperPointOut = 100000;
 	
 	Write_Calibration(calib_Points);
 	Calculate_Calibration(calib_Data, calib_Points);
