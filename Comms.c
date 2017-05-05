@@ -7,7 +7,6 @@
 #define Delay osDelay
 
 int WiFi_Present = 0;
-int serialEnabled = 0;
 int WiFiEnabled = 0;
 
 
@@ -24,26 +23,23 @@ int WiFiEnabled = 0;
 //==================================================//
 
 void Comms_Init() {
-	serialEnabled = Check_For_Serial();
-	if (serialEnabled == 1) {
-		SerialInit();
-		SerialReceiveStart();
-		Reset_WiFi();
-		WiFiEnabled = Check_For_WiFi();
-		if (WiFiEnabled == 1) {
-			int i;
-			int ret;
-			for (i=0; i<3; i++) {
-				ret = WiFi_Init();
-				if (ret == 1) {
-					break;
-				}
-				else {
-					WiFiEnabled = 0;
-				}
+	SerialInit();
+	SerialReceiveStart();
+	Reset_WiFi();
+	WiFiEnabled = Check_For_WiFi();
+	if (WiFiEnabled == 1) {
+		int i;
+		int ret;
+		for (i=0; i<3; i++) {
+			ret = WiFi_Init();
+			if (ret == 1) {
+				break;
+			}
+			else {
+				WiFiEnabled = 0;
 			}
 		}
-
+		
 		// Debug, print selected mode
 		if(WiFiEnabled == 1) {
 			lcd_clear_display();
@@ -57,12 +53,6 @@ void Comms_Init() {
 			Delay(1000);
 			lcd_clear_display();
 		}
-	}
-	else {
-		lcd_clear_display();
-		lcd_write_string("Comms Disabled", 0, 0);
-		Delay(1000);
-		lcd_clear_display();
 	}
 }
 
@@ -83,9 +73,7 @@ void Comms_Send(double value, uint8_t mode, uint8_t range) {
 	uint8_t checksum = 0x00;
 	datap = (uint8_t*) &value;
 	
-	// Serialise data
-	
-	// Build data packet
+	// Serialise data:
 	// start byte
 	data[0] = START_BYTE;
 	checksum = checksum ^ data[0];
@@ -127,6 +115,16 @@ void Comms_Send(double value, uint8_t mode, uint8_t range) {
 }
 
 
+//==================================================//
+//========= Receive function for all comms =========//
+//==================================================//
+// - This function prints the received string to  	//
+//			the LCD. It is mainly to demonstrate the 		//
+//			flexibility of the comms system, but also		//
+//			acted as a good debug tool.									//
+// - This is a blocking function										//
+//==================================================//
+
 void Comms_Receive(void) {
 	if(WiFiEnabled == 1) {
 		WiFi_Receive();
@@ -136,6 +134,15 @@ void Comms_Receive(void) {
 	}
 }
 
+
+//==================================================//
+//======= Check mode function for all comms  =======//
+//==================================================//
+// - This function returns the mode requested via  	//
+//			the comms syste, to be handled by the		 		//
+//			calling function.														//
+// - This is a non-blocking function								//
+//==================================================//
 
 void Comms_Check_Mode(int *mode) {
 	if(WiFiEnabled == 1) {

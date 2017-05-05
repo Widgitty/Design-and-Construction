@@ -24,8 +24,8 @@ DMA_HandleTypeDef DMA_Rx_Handle;
 DMA_HandleTypeDef DMA_Tx_Handle;
 uint8_t rxBuffer = '\000';
 uint8_t dumpBuffer[100];
-uint8_t rxString[17]; // where we build our string from characters coming in
-int rxindex = 0; // index for going though rxString
+uint8_t rxString[17];
+int rxindex = 0;
 
 int errorFlag = 0;
 
@@ -41,6 +41,7 @@ int RXHandlerRegistered = 0;
 int serial_Busy = 0;
 
 uint8_t pData_Local[100];
+
 
 
 //=====================================================//
@@ -61,25 +62,6 @@ void Error(int err) {
 	lcd_clear_display();
 }
 
-int Check_For_Serial() {
-//	int state = 0;
-//	// Enable clock
-//	__HAL_RCC_GPIOA_CLK_ENABLE();	
-//	
-//	// Initialise GPIOs
-//	GPIO_InitTypeDef GPIO_InitStructure;
-//	GPIO_InitStructure.Pin = GPIO_PIN_3;
-//	GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
-//	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
-//	GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
-//	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
-//	
-//	state = HAL_GPIO_ReadPin(GPIOA, 3);
-//	
-//	// TODO: deinit GPIO?
-	
-	return 1;
-}
 
 void Register_RX_Handler(void (*RXHandlerLocal) (uint8_t)) {
 	RXHandlerCallback = RXHandlerLocal;
@@ -99,7 +81,6 @@ void SerialInit() {
 	sprintf((char*)rxString, "");
 	
 	// UART handle and configguration
-	//UART_HandleTypeDef UART_Handle; // Made global for now
 	UART_Handle.Instance = USART2;
   UART_Handle.Init.BaudRate = 115200;
   UART_Handle.Init.WordLength = UART_WORDLENGTH_8B;
@@ -114,34 +95,23 @@ void SerialInit() {
 		//TODO: handle this
 	}
 	SerialReceiveStart();
-	//SerialReceiveDump();
 	Delay(100);
-
 	rxState = 0;
 }
 
 
-// Blocking send for now, could be better implemented in the future
 Serial_StatusTypeDef Serial_Send(uint8_t *pData, uint16_t Size) {
 	if (serial_Busy == 1) {
 		return SERIAL_BUSY;
 	}
 	else {
 		serial_Busy = 1;
-		
 		int i;
 		for (i=0; i<Size; i++) {
 			pData_Local[i] = pData[i];
 		}
-		//memcpy (pData_Local, pData, Size);
 		HAL_StatusTypeDef Ret;
 		Ret = HAL_UART_Transmit_DMA(&UART_Handle, pData_Local, Size);
-		// Block for now
-		/*
-		while (serial_Busy == 1) {
-			Delay(100);
-		}
-		*/
 		if (Ret == HAL_OK)
 			return SERIAL_OK;
 		else
@@ -153,14 +123,12 @@ Serial_StatusTypeDef Serial_Send(uint8_t *pData, uint16_t Size) {
 void SerialReceiveStart() {
 	// Start DMA recieve
 	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
-	//__HAL_DMA_ENABLE(&DMA_Rx_Handle);
 	rxState = 0;
 	HAL_UART_Receive_DMA(&UART_Handle, &rxBuffer, 1);
 }
 
 
-
-
+// This function just prints any recieved string
 void Serial_Receive() {
 	if (strcmp(rx_Out, "") != 0) {
 		char string[17];
@@ -176,6 +144,7 @@ void Serial_Receive() {
 }
 
 
+// This function returns the requested mode
 void Serial_Check_Mode(int *mode) {
 	if (Serial_Mode_Int != -1) {
 		*mode = Serial_Mode_Int;
@@ -229,14 +198,14 @@ HAL_StatusTypeDef Custom_HAL_UART_AbortTransmit(UART_HandleTypeDef *huart)
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 	serial_Busy = 0;
-	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
-	//HAL_UART_DMAStop(huart);
+	// Clear the buffer to prevent overrun
+	__HAL_UART_FLUSH_DRREGISTER(&UART_Handle);
+	// Stop transmitting
 	Custom_HAL_UART_AbortTransmit(huart);
 }
 
 
-int pos = 0;
-	
+// TODO: replace with code similar to WiFi.c
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   __HAL_UART_FLUSH_DRREGISTER(&UART_Handle); // Clear the buffer to prevent overrun
@@ -291,13 +260,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			// RX complete, go back to check
 			rxState = 0;
 		}
-		
-		else if (rxState == 3) { // Check response to AT command
-			rxState = 0;
-		}
-
 	}
-	
 }
 
 

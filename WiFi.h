@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include "cmsis_os.h"
 
-extern int WiFiEnabled;
-
 extern void Reset_WiFi(void);
 extern int Check_For_WiFi(void);
 extern int WiFi_Init(void);

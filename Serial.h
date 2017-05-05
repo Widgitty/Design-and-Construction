@@ -12,7 +12,6 @@ typedef enum
 
 extern int serial_Busy;
 
-extern int Check_For_Serial(void);
 extern void SerialInit(void);
 extern void SerialReceiveStart(void);
 extern void Serial_Receive(void);

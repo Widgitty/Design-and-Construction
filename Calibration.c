@@ -6,6 +6,7 @@
 #include "ADC.h"
 #include "Calculations.h" // should be able to remove this later? or integrate the files together
 #include "lcd_driver.h"
+#include "Defines.h"
 
 #define Delay osDelay
 #define NUM_DIGITS 4
@@ -163,6 +164,7 @@ void Write_Calibration(calibMeasurementTypeDef *calib_Points) {
 		Delay(10);
 	}
 	
+	// De-initialise, as the function is only rarely run
 	HAL_I2C_DeInit(&hi2c1);
 }
 
@@ -208,40 +210,32 @@ void Calculate_Calibration(calibAdjustTypeDef *calib_Data, calibMeasurementTypeD
 //			defaults.														//
 // - These defaults are based on data				//
 //			measured in the lab.								//
-// - The data is not yet accurate.					//
 //==========================================//
 
 void Calibration_Factory_Reset(calibAdjustTypeDef *calib_Data) {
 
 	calibMeasurementTypeDef calib_Points[NUM_MODES];
 	
-	/*
-	calib_Points[0].lowerPointIn = 0;
-	calib_Points[0].lowerPointOut = -1;
-	calib_Points[0].upperPointIn = 3723;
-	calib_Points[0].upperPointOut = 1;
-	*/
+	calib_Points[CURRMODE].lowerPointIn = 784;
+	calib_Points[CURRMODE].lowerPointOut = -0.5;
+	calib_Points[CURRMODE].upperPointIn = 2964;
+	calib_Points[CURRMODE].upperPointOut = 0.5;
 	
-	calib_Points[0].lowerPointIn = 784;
-	calib_Points[0].lowerPointOut = -0.5;
-	calib_Points[0].upperPointIn = 2964;
-	calib_Points[0].upperPointOut = 0.5;
-	
-	calib_Points[1].lowerPointIn = 0;
-	calib_Points[1].lowerPointOut = -10;
-	calib_Points[1].upperPointIn = 3723; // max raw ADC value
-	calib_Points[1].upperPointOut = 10;
+	calib_Points[VOLTMODE].lowerPointIn = 0;
+	calib_Points[VOLTMODE].lowerPointOut = -10;
+	calib_Points[VOLTMODE].upperPointIn = 3723;
+	calib_Points[VOLTMODE].upperPointOut = 10;
 	
 	// might need to change for rms
-	calib_Points[2].lowerPointIn = 0;
-	calib_Points[2].lowerPointOut = 0;
-	calib_Points[2].upperPointIn = 3723;
-	calib_Points[2].upperPointOut = 100000;
+	calib_Points[RMS].lowerPointIn = 0;
+	calib_Points[RMS].lowerPointOut = 0;
+	calib_Points[RMS].upperPointIn = 3723;
+	calib_Points[RMS].upperPointOut = 100000;
 	
-	calib_Points[3].lowerPointIn = 0;
-	calib_Points[3].lowerPointOut = 0;
-	calib_Points[3].upperPointIn = 3723;
-	calib_Points[3].upperPointOut = 100000;
+	calib_Points[RESMODE].lowerPointIn = 0;
+	calib_Points[RESMODE].lowerPointOut = 0;
+	calib_Points[RESMODE].upperPointIn = 3723;
+	calib_Points[RESMODE].upperPointOut = 100000;
 	
 	// max input = 4096
 	
@@ -261,114 +255,6 @@ void Calibration_Init(calibAdjustTypeDef *calib_Data) {
 	calibMeasurementTypeDef calib_Points[NUM_MODES];
 	Read_Calibration(calib_Points);
 	Calculate_Calibration(calib_Data, calib_Points);
-}
-
-
-//==========================================//
-//====== Test Function to Test EEPROM ======//
-//==========================================//
-// - This function should be deleted 				//
-//			after integration.									//
-// - This function tests EEPROM writes and	//
-//			reads to all required addresses.		//
-//==========================================//
-
-void Test_Calibration(calibAdjustTypeDef *calib_Data) {
-	char string[17];
-	
-	Calibration_Init(calib_Data);
-	Calibration_Factory_Reset(calib_Data);
-	
-	calibMeasurementTypeDef calib_Points[NUM_MODES];
-	Read_Calibration(calib_Points);
-	
-	// Print results
-	lcd_clear_display();
-	sprintf(string, "Current low In:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[0].lowerPointIn);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Current low Out:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[0].lowerPointOut);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Current high In:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[0].upperPointIn);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Current high Out:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[0].upperPointOut);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Voltage low In:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[1].lowerPointIn);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Voltage low Out:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[1].lowerPointOut);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Voltage high In:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[1].upperPointIn);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Voltage high Out:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[1].upperPointOut);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Res low In:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[2].lowerPointIn);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Res low Out:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[2].lowerPointOut);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Res high In:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[2].upperPointIn);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	sprintf(string, "Res high Out:");
-	lcd_write_string(string, 0, 0);
-	sprintf(string, "%1.3lf", calib_Points[2].upperPointOut);
-	lcd_write_string(string, 1, 0);
-	Delay(2000);
-	
-	lcd_clear_display();
-	
 }
 
 
@@ -402,14 +288,9 @@ void Calibrate(int mode, int range, calibAdjustTypeDef *calib_Data) {
 	
 	// Read current value from ADC
 	value = read_ADC1();
-	//value = (value *16);
-	//target_value = adcConv(mode, value, &range);
-	target_value = Calib_Conv_Test(mode, value, &range, calib_Data);
+	target_value = adcConv(mode, value, &range, calib_Data);
 	
-	// Allow user to adjust expected value
-	// TODO: fix this interface
-	
-	
+	// Allow user to adjust expected value:
 	// Scale down to proper standard form
 	double mantissa = target_value;	
 	int exponent = 0;
@@ -438,9 +319,6 @@ void Calibrate(int mode, int range, calibAdjustTypeDef *calib_Data) {
 		digits[i] = floor(temp);
 		temp = (temp - digits[i])*10;
 	}
-	
-	
-
 	
 	while (((btns = SWT_Debounce()) != 0x8000) & (exit == 0)) {
 		switch (btns) {
@@ -578,7 +456,7 @@ void Calibrate(int mode, int range, calibAdjustTypeDef *calib_Data) {
 		// Recalculate convertion
 		Calculate_Calibration(calib_Data, calib_Points);
 		
-		// Write?
+		// Write
 		Write_Calibration(calib_Points);
 	}
 	
@@ -606,7 +484,7 @@ extern void Set_Calibration_Flag(void) {
 //=============== Check Flag ===============//
 //==========================================//
 // - This function triggers the calibration	//
-//			routine if the flag has ben set.		//
+//			routine if the flag has ben set.		//s
 //==========================================//
 
 extern void Check_Calibration_Flag(int mode, int range, calibAdjustTypeDef *calib_Data) {
